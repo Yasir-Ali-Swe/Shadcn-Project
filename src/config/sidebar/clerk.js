@@ -9,6 +9,7 @@ export const clerkSidebarItems = [
     title: "Dashboard",
     url: "/dashboard/clerk",
     icon: LayoutDashboard,
+    exact: true,
   },
   {
     title: "Submitted Cases",
