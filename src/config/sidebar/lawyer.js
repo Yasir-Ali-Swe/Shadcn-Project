@@ -11,6 +11,7 @@ export const lawyerSidebarItems = [
     title: "Dashboard",
     url: "/dashboard/lawyer",
     icon: LayoutDashboard,
+    exact: true,
   },
   {
     title: "Proposals",
