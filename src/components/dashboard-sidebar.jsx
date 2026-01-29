@@ -1,5 +1,5 @@
 "use client";
-import {getSidebarItemsByRole} from "@/lib/sidbar";
+import { getSidebarItemsByRole } from "@/lib/sidbar";
 import React from "react";
 import {
   Sidebar,
@@ -14,8 +14,8 @@ import {
 } from "./ui/sidebar";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-const role='admin';
-const links=getSidebarItemsByRole(role);
+const role = "lawyer";
+const links = getSidebarItemsByRole(role);
 console.log(links);
 
 const DashboardSidebar = () => {
@@ -37,11 +37,15 @@ const DashboardSidebar = () => {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{role.charAt(0).toUpperCase() + role.slice(1)} Dashboard</SidebarGroupLabel>
+          <SidebarGroupLabel>
+            {role.charAt(0).toUpperCase() + role.slice(1)} Dashboard
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {links.map((item) => {
-                const isActive = pathname === item.url
+                const isActive = item.exact
+                  ? pathname === item.url
+                  : pathname.startsWith(item.url);
 
                 return (
                   <SidebarMenuItem
@@ -52,7 +56,10 @@ const DashboardSidebar = () => {
                         : "hover:bg-sidebar-accent hover:text-accent-foreground"
                     }`}
                   >
-                    <SidebarMenuButton asChild className="rounded-full text-lg [&>svg]:size-5">
+                    <SidebarMenuButton
+                      asChild
+                      className="rounded-full text-lg [&>svg]:size-5"
+                    >
                       <Link href={item.url} className="flex items-center gap-2">
                         <item.icon />
                         <span>{item.title}</span>
