@@ -14,8 +14,9 @@ import {
 } from "./ui/sidebar";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-
-const links=getSidebarItemsByRole('client');
+const role='admin';
+const links=getSidebarItemsByRole(role);
+console.log(links);
 
 const DashboardSidebar = () => {
   const pathname = usePathname();
@@ -36,7 +37,7 @@ const DashboardSidebar = () => {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Client Dashboard</SidebarGroupLabel>
+          <SidebarGroupLabel>{role.charAt(0).toUpperCase() + role.slice(1)} Dashboard</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {links.map((item) => {
