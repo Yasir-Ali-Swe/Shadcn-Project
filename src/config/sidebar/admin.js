@@ -3,6 +3,7 @@ import {
   Building2,
   UserCog,
   Users,
+  UserPen
 } from "lucide-react";
 
 export const adminSidebarItems = [
@@ -10,6 +11,7 @@ export const adminSidebarItems = [
     title: "Dashboard",
     url: "/dashboard/admin",
     icon: LayoutDashboard,
+    exact: true,
   },
   {
     title: "Courts",
@@ -25,5 +27,10 @@ export const adminSidebarItems = [
     title: "Court Officers",
     url: "/dashboard/admin/court-officers",
     icon: UserCog,
+  },
+  {
+    title: "Profile",
+    url: "/dashboard/admin/profile",
+    icon: UserPen,
   },
 ];
