@@ -10,6 +10,7 @@ export const clientSidebarItems = [
     title: "Dashboard",
     url: "/dashboard/client",
     icon: LayoutDashboard,
+    exact: true,
   },
   {
     title: "Proposals",
