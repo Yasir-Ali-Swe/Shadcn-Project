@@ -1,43 +1,77 @@
 "use client";
-import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useDispatch } from "react-redux";
+import { authApi } from "@/lib/api";
+import { setUser } from "@/store/slices/auth-slice";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import {
   Card,
+  CardContent,
   CardHeader,
-  CardFooter,
   CardTitle,
   CardDescription,
-  CardContent,
+  CardFooter,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { EyeOff, Eye } from "lucide-react";
-import { useRouter } from "next/navigation";
 
+const formSchema = z.object({
+  email: z.string().email({ message: "Invalid email address" }),
+  password: z
+    .string()
+    .min(4, { message: "Password must be at least 6 characters" }),
+});
 const page = () => {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-  const tooglePassword=()=>{
-    setShowPassword(!showPassword)
-  }
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
+  const dispatch = useDispatch();
+  const [error, setError] = useState("");
+
+  const form = useForm({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    console.log("Form submitted:", formData);
-    router.push("/home");
-  };
+
+  const loginMutation = useMutation({
+    mutationFn: authApi.login,
+    onSuccess: (data) => {
+      authApi.getMe().then((meData) => {
+        if (meData.success) {
+          const normalizedRole = meData.user.role.replace("_", "-");
+          dispatch(setUser(meData.user));
+          if (!meData.user.isProfileComplete) {
+            router.push(`/dashboard/${normalizedRole}/complete-profile`);
+          } else {
+            router.push(`/dashboard/${normalizedRole}`);
+          }
+        }
+      });
+    },
+    onError: (err) => {
+      setError(err.response?.data?.message || "Login failed");
+    },
+  });
+
+  function onSubmit(values) {
+    setError("");
+    loginMutation.mutate(values);
+  }
+
   return (
     <>
       <Card className={"w-full max-w-sm"}>
@@ -48,42 +82,46 @@ const page = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit}>
-            <div className="mb-5">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                type="email"
-                id="email"
-                placeholder="Enter your email"
-                className="mt-1"
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
                 name="email"
-                value={formData.email}
-                onChange={handleChange}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="email@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            <div className="my-2 relative">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                placeholder="Enter your password"
-                className="mt-1"
+              <FormField
+                control={form.control}
                 name="password"
-                value={formData.password}
-                onChange={handleChange}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" placeholder="******" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <Button variant="icon" onClick={tooglePassword} className="absolute top-4.5 right-1">
-                {
-                    showPassword ? <EyeOff className="size-5"/> : <Eye className="size-5" />
-                }
+
+              {error && <p className="text-sm text-red-500">{error}</p>}
+
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={loginMutation.isPending}
+              >
+                {loginMutation.isPending ? "Logging in..." : "Login"}
               </Button>
-            </div>
-            <div>
-              <Button type="submit" className="w-full mt-4">
-                Login
-              </Button>
-            </div>
-          </form>
+            </form>
+          </Form>
         </CardContent>
         <CardFooter>
           <Button variant="link" className="w-full ">
