@@ -1,0 +1,28 @@
+import { cn } from "@/lib/utils";
+
+export default function MessageBubble({ text, sender, timestamp }) {
+  const isMe = sender === "me";
+
+  return (
+    <div
+      className={cn(
+        "flex w-full mt-2 space-x-3 max-w-xs",
+        isMe ? "ml-auto justify-end" : "",
+      )}
+    >
+      <div
+        className={cn(
+          "relative px-4 py-2 rounded-lg shadow text-sm",
+          isMe
+            ? "bg-primary text-primary-foreground rounded-br-none"
+            : "bg-muted text-foreground rounded-bl-none",
+        )}
+      >
+        <p>{text}</p>
+        <span className="text-[10px] opacity-70 block text-right mt-1">
+          {timestamp}
+        </span>
+      </div>
+    </div>
+  );
+}
