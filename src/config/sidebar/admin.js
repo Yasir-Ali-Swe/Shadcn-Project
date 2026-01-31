@@ -19,15 +19,11 @@ export const adminSidebarItems = [
     icon: Building2,
   },
   {
-    title: "Clerks",
-    url: "/dashboard/admin/clerks",
+    title: "Users",
+    url: "/dashboard/admin/users",
     icon: Users,
   },
-  {
-    title: "Court Officers",
-    url: "/dashboard/admin/court-officers",
-    icon: UserCog,
-  },
+
   {
     title: "Profile",
     url: "/dashboard/admin/profile",
