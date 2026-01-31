@@ -1,212 +1,265 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
-import { useMutation, useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
-import { useDispatch, useSelector } from "react-redux";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { lawyerApi } from "@/lib/api/lawyer";
-import { setUser } from "@/store/slices/auth-slice";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { authApi } from "@/lib/api/auth";
+import { toast } from "sonner";
+import { Loader2, User, GraduationCap, Briefcase } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { useState, useEffect } from "react";
-
-const formSchema = z.object({
-  dob: z
-    .string()
-    .refine((val) => !isNaN(Date.parse(val)), { message: "Invalid date" }),
-  city: z.string().min(2, { message: "City is required" }),
-  province: z.enum(["Punjab", "Sindh", "KPK", "Balochistan"], {
-    required_error: "Select a province",
-  }),
-  profileImageUrl: z
-    .string()
-    .url({ message: "Invalid URL" })
-    .optional()
-    .or(z.literal("")),
-});
+import { LawyerProfileForm } from "@/components/dashboard/lawyer/LawyerProfileForm";
+import { LawyerEducationForm } from "@/components/dashboard/lawyer/LawyerEducationForm";
+import { LawyerProfessionalForm } from "@/components/dashboard/lawyer/LawyerProfessionalForm";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/store/slices/auth-slice";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function CompleteProfilePage() {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const [error, setError] = useState("");
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("personal");
 
-  const form = useForm({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      dob: "",
-      city: "",
-      province: undefined,
-      profileImageUrl: "https://github.com/shadcn.png", // Default placeholder
-    },
+  // --- QUERY 1: AUTH USER ---
+  const { data: authData, isLoading: isAuthLoading } = useQuery({
+    queryKey: ["authUser"],
+    queryFn: authApi.getMe,
   });
 
-  // Fetch existing info to pre-fill if editing
-  const { data: infoResult } = useQuery({
+  // --- QUERY 2: PERSONAL INFO ---
+  const {
+    data: infoResult,
+    isLoading: isInfoLoading,
+    error: infoError,
+  } = useQuery({
     queryKey: ["lawyerInfo"],
     queryFn: lawyerApi.getInfo,
-    enabled: !!user?.isProfileComplete, // Only fetch if we think there is data
+    retry: false,
   });
 
-  useEffect(() => {
-    if (infoResult?.data) {
-      const info = infoResult.data;
-      form.reset({
-        dob: info.dob ? new Date(info.dob).toISOString().split("T")[0] : "",
-        city: info.city || "",
-        province: info.province || undefined,
-        profileImageUrl: info.profileImageUrl || "",
-      });
-    }
-  }, [infoResult, form]);
+  // --- QUERY 3: PROFESSIONAL PROFILE ---
+  const { data: profileResult, isLoading: isProfileLoading } = useQuery({
+    queryKey: ["lawyerProfile"],
+    queryFn: lawyerApi.getProfile,
+    retry: false,
+  });
 
-  const completeProfileMutation = useMutation({
-    mutationFn: lawyerApi.completeProfile,
+  const isInfoNotFound = infoError?.response?.status === 404;
+  const isEditingInfo = !isInfoNotFound && !!infoResult;
+
+  const user = authData?.data?.user;
+  const lawyerInfo = infoResult?.data;
+  const lawyerProfile = profileResult?.data;
+
+  // --- MUTATION: PERSONAL INFO ---
+  const infoMutation = useMutation({
+    mutationFn: (values) => {
+      // Use completeProfile for initial creation or updateInfo for edits
+      return isEditingInfo
+        ? lawyerApi.updateInfo(values)
+        : lawyerApi.completeProfile(values);
+    },
     onSuccess: (data) => {
-      // Update redux with new user state (isProfileComplete: true)
-      if (data.user) {
-        dispatch(setUser(data.user));
-      }
-      router.push("/dashboard/lawyer");
+      toast.success("Personal information saved!");
+      queryClient.invalidateQueries(["lawyerInfo"]);
+      queryClient.invalidateQueries(["authUser"]);
+      // Move to next tab
+      setActiveTab("education");
     },
     onError: (err) => {
-      setError(err.response?.data?.message || "Profile completion failed");
+      toast.error(err.response?.data?.message || "Failed to save profile");
     },
   });
 
-  function onSubmit(values) {
-    setError("");
-    completeProfileMutation.mutate(values);
+  // --- MUTATION: PROFESSIONAL/EDUCATION ---
+  const profileMutation = useMutation({
+    mutationFn: lawyerApi.updateProfile,
+    onSuccess: (response) => {
+      queryClient.invalidateQueries(["lawyerProfile"]);
+
+      // If backend reports profile is now complete, update Redux and Redirect!
+      if (response.isProfileComplete && user) {
+        dispatch(setUser({ ...user, isProfileComplete: true }));
+        toast.success("Profile completed! Redirecting to dashboard...");
+        setTimeout(() => {
+          router.push("/dashboard/lawyer");
+        }, 1500);
+      } else {
+        toast.success("Details saved successfully");
+        // Logic to move tabs if needed
+        if (activeTab === "education") setActiveTab("professional");
+      }
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to update profile");
+    },
+  });
+
+  if (isAuthLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // If user is already complete, redirect (safeguard)
+  if (user?.isProfileComplete) {
+    router.push("/dashboard/lawyer");
+    return null;
   }
 
   return (
-    <div className="flex items-center justify-center h-full">
-      <Card className="w-full h-full">
-        <CardHeader>
-          <CardTitle>Complete Your Profile</CardTitle>
-          <CardDescription>
-            Please provide your details to access the Lawyer Dashboard.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="dob"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Date of Birth</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <div className="container max-w-4xl py-10">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold tracking-tight">
+          Complete Your Profile
+        </h2>
+        <p className="text-muted-foreground">
+          You must complete all sections below to verify your identity and
+          access the platform.
+        </p>
+      </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="city"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>City</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Lahore" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="personal" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Personal Info
+          </TabsTrigger>
+          <TabsTrigger value="education" className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" />
+            Education
+          </TabsTrigger>
+          <TabsTrigger value="professional" className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            Professional
+          </TabsTrigger>
+        </TabsList>
+
+        {/* TAB 1: PERSONAL */}
+        <TabsContent value="personal">
+          <Card>
+            <CardHeader>
+              <CardTitle>Step 1: Personal Information</CardTitle>
+              <CardDescription>Basic identity details.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isInfoLoading ? (
+                <div className="flex justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <LawyerProfileForm
+                  defaultValues={
+                    isEditingInfo
+                      ? {
+                          dob: lawyerInfo?.dob
+                            ? new Date(lawyerInfo.dob)
+                                .toISOString()
+                                .split("T")[0]
+                            : "",
+                          city: lawyerInfo?.city || "",
+                          province: lawyerInfo?.province || "",
+                          profileImageUrl: lawyerInfo?.profileImageUrl || "",
+                        }
+                      : undefined
+                  }
+                  onSubmit={(values) => infoMutation.mutate(values)}
+                  isSubmitting={infoMutation.isPending}
                 />
-                <FormField
-                  control={form.control}
-                  name="province"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Province</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select Province" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Punjab">Punjab</SelectItem>
-                          <SelectItem value="Sindh">Sindh</SelectItem>
-                          <SelectItem value="KPK">
-                            Khyber Pakhtunkhwa
-                          </SelectItem>
-                          <SelectItem value="Balochistan">
-                            Balochistan
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 2: EDUCATION */}
+        <TabsContent value="education">
+          <Card>
+            <CardHeader>
+              <CardTitle>Step 2: Educational Details</CardTitle>
+              <CardDescription>
+                Add your degrees. At least one is required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isProfileLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <LawyerEducationForm
+                  defaultValues={
+                    lawyerProfile?.education?.length > 0
+                      ? {
+                          education: lawyerProfile.education.map((edu) => ({
+                            degree: edu.degree,
+                            institute: edu.institute,
+                            startDate: edu.startDate
+                              ? new Date(edu.startDate)
+                                  .toISOString()
+                                  .split("T")[0]
+                              : "",
+                            endDate: edu.endDate
+                              ? new Date(edu.endDate)
+                                  .toISOString()
+                                  .split("T")[0]
+                              : "",
+                            isContinuing: edu.isContinuing || false,
+                          })),
+                        }
+                      : undefined
+                  }
+                  onSubmit={(values) => profileMutation.mutate(values)}
+                  isSubmitting={profileMutation.isPending}
                 />
-              </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-              <FormField
-                control={form.control}
-                name="profileImageUrl"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Profile Image URL</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="https://example.com/image.jpg"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {error && <p className="text-sm text-red-500">{error}</p>}
-
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={completeProfileMutation.isPending}
-              >
-                {completeProfileMutation.isPending
-                  ? "Saving..."
-                  : "Complete Profile"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+        {/* TAB 3: PROFESSIONAL */}
+        <TabsContent value="professional">
+          <Card>
+            <CardHeader>
+              <CardTitle>Step 3: Professional Details</CardTitle>
+              <CardDescription>
+                Experience, specialization, and bio. This will complete your
+                profile.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isProfileLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <LawyerProfessionalForm
+                  defaultValues={
+                    lawyerProfile
+                      ? {
+                          bio: lawyerProfile.bio || "",
+                          experience: lawyerProfile.experience || 0,
+                          barCouncil: lawyerProfile.barCouncil || "",
+                          specialization: lawyerProfile.specialization || [],
+                        }
+                      : undefined
+                  }
+                  onSubmit={(values) => profileMutation.mutate(values)}
+                  isSubmitting={profileMutation.isPending}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
