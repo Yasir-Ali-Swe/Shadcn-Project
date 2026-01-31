@@ -1,126 +1,287 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { lawyerApi } from "@/lib/api/lawyer";
+import { authApi } from "@/lib/api/auth";
+import { toast } from "sonner";
+import { Loader2, User, UserCog, GraduationCap, Briefcase } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { MapPin, Calendar, Mail, User } from "lucide-react";
-import { format } from "date-fns";
-import { useSelector } from "react-redux";
-import Link from "next/link";
+import { LawyerAccountForm } from "@/components/dashboard/lawyer/LawyerAccountForm";
+import { LawyerProfileForm } from "@/components/dashboard/lawyer/LawyerProfileForm";
+import { LawyerEducationForm } from "@/components/dashboard/lawyer/LawyerEducationForm";
+import { LawyerProfessionalForm } from "@/components/dashboard/lawyer/LawyerProfessionalForm";
+import { useDispatch } from "react-redux";
+import { setUser } from "@/store/slices/auth-slice";
 
-export default function ProfilePage() {
-  const { user } = useSelector((state) => state.auth);
+export default function LawyerProfilePage() {
+  const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
-  // We need an API to get the FULL profile (UserInfo + LawyerProfile details)
-  // lawyerApi.getProfile() (mapped to /get-lawyer-profile) returns the LawyerProfile model
-  // which populates 'lawyerProfileId' (UserInfo) and 'userId'.
+  // --- QUERY 1: AUTH USER (Account Details) ---
+  const { data: authData, isLoading: isAuthLoading } = useQuery({
+    queryKey: ["authUser"],
+    queryFn: authApi.getMe,
+  });
 
-  // However, if the user ONLY completed the "Basic" profile (complete-profile),
-  // 'LawyerProfile' (professional info) might not exist yet!
-  // The 'completeProfile' function only creates 'UserInfo'.
-  // 'getLawyerProfile' in backend requires 'LawyerProfile' doc to exist, or it returns 404.
-
-  // So if a user just finished 'complete-profile', this page will 404.
-  // We need to fetch 'UserInfo' separately or handle the 404 gracefully.
-  // Actually, there is 'getLawyerInfo' API (/get-info) which returns UserInfo.
-  // Let's use THAT if we are only assuming basic profile completion.
-
-  // BUT the sidebar usually implies "My Professional Profile".
-  // Let's try to fetch both or fallback.
-
-  // Actually, I'll use a new wrapper or just try to get 'getLawyerInfo' first as base.
-  // Backend 'getLawyerInfo' fetches UserInfoModel.
-
+  // --- QUERY 2: PERSONAL INFO (User Info) ---
   const {
     data: infoResult,
-    isLoading: infoLoading,
+    isLoading: isInfoLoading,
     error: infoError,
   } = useQuery({
     queryKey: ["lawyerInfo"],
     queryFn: lawyerApi.getInfo,
+    retry: false,
   });
 
+  // --- QUERY 3: PROFESSIONAL PROFILE (Education + Professional) ---
+  const { data: profileResult, isLoading: isProfileLoading } = useQuery({
+    queryKey: ["lawyerProfile"],
+    queryFn: lawyerApi.getProfile,
+    retry: false,
+  });
+
+  const isInfoNotFound = infoError?.response?.status === 404;
+  const isEditingInfo = !isInfoNotFound && !!infoResult;
+
+  const user = authData?.data?.user;
   const lawyerInfo = infoResult?.data;
+  const lawyerProfile = profileResult?.data; // Includes bio, education, experience etc.
 
-  if (infoLoading) return <div>Loading profile...</div>;
+  // --- MUTATION: ACCOUNT ---
+  const accountMutation = useMutation({
+    mutationFn: lawyerApi.updateAccount,
+    onSuccess: (response) => {
+      toast.success("Account details updated successfully");
+      queryClient.invalidateQueries(["authUser"]);
+      // Update Redux state
+      if (user) {
+        dispatch(setUser({ ...user, ...response.data }));
+      }
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to update account");
+    },
+  });
 
-  // If no info found (404), lawyerInfo might be undefined.
-  // We can show basic auth user info still.
+  // --- MUTATION: PERSONAL INFO ---
+  const infoMutation = useMutation({
+    mutationFn: (values) => {
+      // If not found, use completeProfile to create initial UserInfo
+      return isEditingInfo
+        ? lawyerApi.updateInfo(values)
+        : lawyerApi.completeProfile(values);
+    },
+    onSuccess: (data) => {
+      toast.success("Personal information updated!");
+      queryClient.invalidateQueries(["lawyerInfo"]);
+      queryClient.invalidateQueries(["authUser"]);
+      queryClient.invalidateQueries(["lawyerProfile"]); // Re-fetch profile in case creation triggered side-effects
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to save profile");
+    },
+  });
+
+  // --- MUTATION: PROFESSIONAL/EDUCATION ---
+  // We use the same updateProfile endpoint for both, just passing different fields
+  const profileMutation = useMutation({
+    mutationFn: lawyerApi.updateProfile,
+    onSuccess: (response) => {
+      toast.success("Profile updated successfully");
+      queryClient.invalidateQueries(["lawyerProfile"]);
+
+      // If backend reports profile is now complete, update Redux!
+      if (response.isProfileComplete && user) {
+        dispatch(setUser({ ...user, isProfileComplete: true }));
+        toast.success("Congratulations! Your profile is now complete.");
+      }
+    },
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to update profile");
+    },
+  });
+
+  if (isAuthLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6 pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">My Profile</h2>
-        <Button variant="outline" asChild>
-          <Link href="/dashboard/lawyer/complete-profile">Edit Basic Info</Link>
-        </Button>
+    <div className="space-y-6 pt-6 pb-12">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">
+          Complete Your Profile
+        </h2>
+        <p className="text-muted-foreground">
+          Fill in all sections to unlock your dashboard and start receiving
+          cases.
+        </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Details</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage
-                  src={
-                    lawyerInfo?.profileImageUrl ||
-                    "https://github.com/shadcn.png"
+      <Tabs defaultValue="account" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4">
+          <TabsTrigger value="account" className="flex items-center gap-2">
+            <UserCog className="h-4 w-4" />
+            Account
+          </TabsTrigger>
+          <TabsTrigger value="personal" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Personal
+          </TabsTrigger>
+          <TabsTrigger value="education" className="flex items-center gap-2">
+            <GraduationCap className="h-4 w-4" />
+            Education
+          </TabsTrigger>
+          <TabsTrigger value="professional" className="flex items-center gap-2">
+            <Briefcase className="h-4 w-4" />
+            Professional
+          </TabsTrigger>
+        </TabsList>
+
+        {/* TAB 1: ACCOUNT */}
+        <TabsContent value="account">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Details</CardTitle>
+              <CardDescription>Manage your login credentials.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LawyerAccountForm
+                defaultValues={{
+                  fullName: user?.fullName || "",
+                  email: user?.email || "",
+                }}
+                onSubmit={(values) => accountMutation.mutate(values)}
+                isSubmitting={accountMutation.isPending}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 2: PERSONAL */}
+        <TabsContent value="personal">
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>
+                Basic details required for identity verification.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isInfoLoading ? (
+                <div className="flex justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <LawyerProfileForm
+                  defaultValues={
+                    isEditingInfo
+                      ? {
+                          dob: lawyerInfo?.dob
+                            ? new Date(lawyerInfo.dob)
+                                .toISOString()
+                                .split("T")[0]
+                            : "",
+                          city: lawyerInfo?.city || "",
+                          province: lawyerInfo?.province || "",
+                          profileImageUrl: lawyerInfo?.profileImageUrl || "",
+                        }
+                      : undefined
                   }
+                  onSubmit={(values) => infoMutation.mutate(values)}
+                  isSubmitting={infoMutation.isPending}
                 />
-                <AvatarFallback>CN</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="font-medium text-lg">{user?.fullName}</p>
-                <p className="text-muted-foreground">{user?.email}</p>
-                <Badge className="mt-1 capitalize">{user?.role}</Badge>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Personal Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {lawyerInfo ? (
-              <>
-                <div className="flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span>
-                    DOB:{" "}
-                    {lawyerInfo.dob
-                      ? format(new Date(lawyerInfo.dob), "PPP")
-                      : "N/A"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span>
-                    {lawyerInfo.city}, {lawyerInfo.province}
-                  </span>
-                </div>
-              </>
-            ) : (
-              <p className="text-muted-foreground">
-                Additional profile information not set.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        {/* TAB 3: EDUCATION */}
+        <TabsContent value="education">
+          <Card>
+            <CardHeader>
+              <CardTitle>Educational Details</CardTitle>
+              <CardDescription>
+                Add your degrees (LLB, LLM, PhD). At least one is required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isProfileLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <LawyerEducationForm
+                  defaultValues={
+                    lawyerProfile?.education?.length > 0
+                      ? {
+                          education: lawyerProfile.education.map((edu) => ({
+                            degree: edu.degree,
+                            institute: edu.institute,
+                            startDate: edu.startDate
+                              ? new Date(edu.startDate)
+                                  .toISOString()
+                                  .split("T")[0]
+                              : "",
+                            endDate: edu.endDate
+                              ? new Date(edu.endDate)
+                                  .toISOString()
+                                  .split("T")[0]
+                              : "",
+                            isContinuing: edu.isContinuing || false,
+                          })),
+                        }
+                      : undefined
+                  }
+                  onSubmit={(values) => profileMutation.mutate(values)}
+                  isSubmitting={profileMutation.isPending}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 4: PROFESSIONAL */}
+        <TabsContent value="professional">
+          <Card>
+            <CardHeader>
+              <CardTitle>Professional Details</CardTitle>
+              <CardDescription>
+                Showcase your experience and expertise.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isProfileLoading ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : (
+                <LawyerProfessionalForm
+                  defaultValues={
+                    lawyerProfile
+                      ? {
+                          bio: lawyerProfile.bio || "",
+                          experience: lawyerProfile.experience || 0,
+                          barCouncil: lawyerProfile.barCouncil || "",
+                          specialization: lawyerProfile.specialization || [],
+                        }
+                      : undefined
+                  }
+                  onSubmit={(values) => profileMutation.mutate(values)}
+                  isSubmitting={profileMutation.isPending}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
