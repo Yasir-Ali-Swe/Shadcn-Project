@@ -22,7 +22,7 @@ export default function CompleteAdminProfilePage() {
   });
 
   return (
-    <div className="max-w-md mx-auto py-10">
+    <div className="w-[60%] py-10">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Complete Your Admin Profile</h1>
         <p className="text-muted-foreground">
