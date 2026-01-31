@@ -1,66 +1,36 @@
-# Next.js Frontend Concepts with Shadcn UI
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
-A comprehensive project to explore and demonstrate key frontend concepts in **Next.js** using **Shadcn UI**. This repository serves as a learning resource and reference for building modern, responsive, and maintainable web applications.
+## Getting Started
 
----
+First, run the development server:
 
-## 🚀 Features
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
 
-This project covers core frontend topics in Next.js, including:
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-- **Pages & Routing**
-  - Static pages
-  - Dynamic routes
-  - Nested routes
-  - Catch-all routes
-- **Layouts & Templates**
-  - Reusable layouts
-  - Nested layouts
-- **Server Components & Client Components**
-  - Using React Server Components
-  - Switching between client and server components
-- **API Routes**
-  - Creating backend endpoints within Next.js
-  - Fetching data from server routes
-- **Shadcn UI Integration**
-  - Prebuilt, customizable UI components
-  - Theme support
-  - Component composition
-- **State Management**
-  - Local component state
-  - Global state patterns
-- **Data Fetching**
-  - Fetching from APIs
-  - SSR, SSG, and CSR examples
-- **Forms & Validation**
-  - Form handling with React Hook Form
-  - Client-side validation
-- **Authentication Concepts**
-  - Example login/logout flows
-  - Route protection (conceptual)
+You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
 
----
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## 💻 Tech Stack
+## Learn More
 
-- **Frontend:** Next.js 16  
-- **UI Library:** Shadcn UI (Tailwind CSS based)  
-- **Styling:** Tailwind CSS  
-- **State Management:** React state / context / optional Redux Toolkit  
-- **Data Fetching:** `fetch`, SWR, or Tanstack Query (examples included)  
+To learn more about Next.js, take a look at the following resources:
 
----
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-## 📂 Project Structure
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-```plaintext
-/
-├─ src/
-├─ app/                 # Next.js App directory with pages and layouts
-├─ components/          # Reusable UI components
-├─ hooks/               # Custom React hooks
-├─ utils/               # Utility functions
-├─ styles/              # Tailwind & custom styles
-├─ public/              # Static assets
-├─ README.md            # Project documentation
-└─ package.json         # Project dependencies
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
