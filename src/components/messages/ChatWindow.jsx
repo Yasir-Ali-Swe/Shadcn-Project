@@ -12,6 +12,7 @@ export default function ChatWindow({
   messages,
   onSendMessage,
   onBack,
+  isLoading,
 }) {
   const scrollRef = useRef(null);
 
@@ -32,6 +33,17 @@ export default function ChatWindow({
         <p className="text-muted-foreground max-w-sm">
           Select a conversation from the left to start chatting securely with
           your clients.
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center bg-muted/5 h-full">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 dark:border-white"></div>
+        <p className="mt-2 text-muted-foreground text-sm">
+          Loading messages...
         </p>
       </div>
     );
@@ -81,14 +93,20 @@ export default function ChatWindow({
           </span>
         </div>
 
-        {messages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            text={msg.text}
-            sender={msg.sender}
-            timestamp={msg.timestamp}
-          />
-        ))}
+        {messages.length === 0 ? (
+          <p className="text-center text-muted-foreground text-sm py-4">
+            No messages yet. Start the conversation!
+          </p>
+        ) : (
+          messages.map((msg) => (
+            <MessageBubble
+              key={msg.id}
+              text={msg.text}
+              sender={msg.sender}
+              timestamp={msg.timestamp}
+            />
+          ))
+        )}
       </div>
       <MessageInput onSendMessage={onSendMessage} />
     </div>
