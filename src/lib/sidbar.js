@@ -13,7 +13,9 @@ export const getSidebarItemsByRole = (role) => {
       return lawyerSidebarItems;
     case "clerk":
       return clerkSidebarItems;
-    case "courtOfficer":
+    case "court_officer":
+      return courtOfficerSidebarItems;
+    case "courtOfficer": // Fallback for legacy camelCase
       return courtOfficerSidebarItems;
     case "admin":
       return adminSidebarItems;
