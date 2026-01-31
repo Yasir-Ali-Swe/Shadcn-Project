@@ -37,5 +37,25 @@ export const casesApi = {
     getCourts: async () => {
         const response = await api.get("/case/get-courts");
         return response.data;
-    }
+    },
+    getAcceptedClients: async () => {
+        const response = await api.get("/case/accepted-clients");
+        return response.data;
+    },
+    getClientById: async (caseId) => {
+        const response = await api.get(`/case/client/cases/${caseId}`);
+        return response.data;
+    },
+    getClientCases: async () => {
+        const response = await api.get("/case/client/cases");
+        return response.data;
+    },
+    getClientHearings: async (caseId) => {
+        const response = await api.get(`/case/client/cases/${caseId}/hearings`);
+        return response.data;
+    },
+    getClientJudgments: async (caseId) => {
+        const response = await api.get(`/case/client/cases/${caseId}/judgments`);
+        return response.data;
+    },
 };
