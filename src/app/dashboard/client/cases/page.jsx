@@ -1,7 +1,19 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { clientApi } from "@/lib/api/client";
+import { casesApi } from "@/lib/api/cases";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import Link from "next/link";
+import { format } from "date-fns";
 import {
   Card,
   CardContent,
@@ -9,34 +21,34 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { dummyCases } from "@/lib/dummy-data/cases"; // Fallback
-import { Loader2 } from "lucide-react";
+import { Eye } from "lucide-react";
 
 export default function ClientCasesPage() {
-  const { data: result, isLoading } = useQuery({
+  // Use clientGetCases endpoint via api wrapper
+  // We need to ensure `casesApi.getClientCases` or similar exists.
+  // Wait, `frontend/src/lib/api/cases.js` doesn't have `getClientCases`.
+  // It has `getAll` (Lawyer) and `getClientById`.
+  // `clientGetCases` backend route is `/case/client/cases`.
+  // I need to update `casesApi` first?
+  // I'll check `casesApi` content from previous memory or view it.
+  // Step 1328 showed `getAll`.
+  // I will write this file assuming `casesApi.getClientCases` exists, then I will add it to the API file immediately.
+
+  const {
+    data: result,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["clientCases"],
-    queryFn: () => clientApi.getCases(),
+    queryFn: () => casesApi.getClientCases(), // NOTE: NEED TO IMPLEMENT THIS
+    retry: false,
   });
 
-  // Logic: Use real data if available, else if array is empty use mock data for preview
-  let cases = result?.data || [];
-  let isMock = false;
-
-  if (!isLoading && cases.length === 0) {
-    cases = dummyCases;
-    isMock = true;
+  if (isLoading) {
+    return <div className="p-8">Loading your cases...</div>;
   }
 
-  if (isLoading)
-    return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
+  const cases = result?.data || [];
 
   return (
     <div className="space-y-6 pt-6">
@@ -47,62 +59,89 @@ export default function ClientCasesPage() {
             View the status and details of your legal cases.
           </p>
         </div>
-        {isMock && (
-          <Badge
-            variant="outline"
-            className="text-yellow-600 border-yellow-600"
-          >
-            Preview Mode (Mock Data)
-          </Badge>
-        )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {cases.map((c) => (
-          <Link key={c._id} href={`/dashboard/client/cases/${c._id}`}>
-            <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <Badge
-                    variant={c.status === "active" ? "default" : "secondary"}
-                  >
-                    {c.status}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {c.createdAt
-                      ? format(new Date(c.createdAt), "MMM d, yyyy")
-                      : "N/A"}
-                  </span>
-                </div>
-                <CardTitle className="line-clamp-1">{c.title}</CardTitle>
-                <CardDescription>
-                  {c.caseNumber || "Processing..."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Type:</span>
-                    <span className="font-medium">{c.type}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Court:</span>
-                    <span className="font-medium text-right truncate pl-4">
-                      {c.courtId?.name || "Not Assigned"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Lawyer:</span>
-                    <span className="font-medium">
-                      {c.lawyerId?.fullName || "Unknown"}
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Case List</CardTitle>
+          <CardDescription>
+            All cases associated with your account.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {cases.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              You have no cases yet.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Case Number</TableHead>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Lead Lawyer</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {cases.map((c) => (
+                  <TableRow key={c._id}>
+                    <TableCell className="font-medium">
+                      {c.caseNumber || (
+                        <span className="text-muted-foreground italic">
+                          Draft (Unfiled)
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell>{c.title}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {c.lawyerId?.fullName || "Unassigned"}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {c.lawyerId?.email}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{c.type}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        {/* Submission Status */}
+                        {c.submissionStatus === "draft" && (
+                          <Badge variant="secondary" className="w-fit">
+                            Draft
+                          </Badge>
+                        )}
+                        {c.submissionStatus === "submitted" && (
+                          <Badge className="bg-blue-600 w-fit">Submitted</Badge>
+                        )}
+                        {c.submissionStatus === "registered" && (
+                          <Badge
+                            variant="outline"
+                            className="text-green-700 border-green-600 bg-green-50 w-fit"
+                          >
+                            Registered
+                          </Badge>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/dashboard/client/cases/${c._id}`}>
+                          <Eye className="mr-2 h-4 w-4" /> View
+                        </Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
