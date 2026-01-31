@@ -7,7 +7,7 @@ import { Briefcase, Calendar, Gavel, Scale, Clock } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
-import { dummyDashboardStats } from "@/lib/dummy-data/lawyerDashboard";
+// import { dummyDashboardStats } from "@/lib/dummy-data/lawyerDashboard";
 
 export default function LawyerDashboardPage() {
   const {
@@ -17,25 +17,21 @@ export default function LawyerDashboardPage() {
   } = useQuery({
     queryKey: ["lawyerStats"],
     queryFn: lawyerApi.getStats,
-    retry: false, // Don't retry if it fails, just show dummy
+    retry: false,
   });
-
-  // If loading, we could show skeleton, but let's stick to loading text for now or just wait.
-  // Ideally, for "mock" feel, maybe we return dummy immediately if error?
 
   if (isLoading) {
     return <div className="p-8">Loading dashboard stats...</div>;
   }
 
-  // Fallback to dummy data if error or no data
-  const statsData = stats?.data || dummyDashboardStats;
+  const statsData = stats?.data || {};
 
   const {
-    totalCases,
-    activeCases,
-    upcomingHearings,
-    pendingJudgments,
-    recentActivity,
+    totalCases = 0,
+    activeCases = 0,
+    upcomingHearings = 0,
+    pendingJudgments = 0,
+    recentActivity = [],
   } = statsData;
 
   return (
