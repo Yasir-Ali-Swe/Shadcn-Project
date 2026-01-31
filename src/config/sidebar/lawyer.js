@@ -24,13 +24,13 @@ export const lawyerSidebarItems = [
     icon: Briefcase,
   },
   {
-    title: "Profile",
-    url: "/dashboard/lawyer/profile", // This assumes existence. 
-    icon: UserPen,
-  },
-  {
     title: "Messages",
     url: "/dashboard/lawyer/messages",
     icon: MessageCircle,
+  },
+  {
+    title: "Profile",
+    url: "/dashboard/lawyer/profile",
+    icon: UserPen,
   },
 ];
