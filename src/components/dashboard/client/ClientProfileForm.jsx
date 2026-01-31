@@ -11,15 +11,33 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Loader2 } from "lucide-react";
 
+// Provinces enum from backend
+const PROVINCES = ["Punjab", "Sindh", "KPK", "Balochistan"];
+
 const profileSchema = z.object({
-  dob: z.string().min(1, "Date of Birth is required"),
+  dob: z.string().min(1, "Date of Birth is required"), // handling as string from date input
   city: z.string().min(2, "City is required"),
-  province: z.string().min(2, "Province is required"),
-  country: z.string().min(2, "Country is required"),
+  province: z.enum(PROVINCES, {
+    errorMap: () => ({ message: "Please select a valid province" }),
+  }),
+  // Country removed as it wasn't in list of required fields for "Profile Completion" in prompt,
+  // but let's keep it if backend expects it or just hide it?
+  // Backend model UserInfo has country in createClientProfile destructuring but schema doesn't show it explicitly in the snippet I saw?
+  // Wait, backend/controllers/client-controller.js line 8: const { ..., country, ... } = req.body;
+  // But backend/models/user-info-model.js lines 1-35 DO NOT have 'country'.
+  // So 'country' is likely ignored by Mongoose if not in schema. I will remove it from UI to be safe/clean.
   profileImageUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
 });
 
@@ -30,7 +48,6 @@ export function ClientProfileForm({ defaultValues, onSubmit, isSubmitting }) {
       dob: "",
       city: "",
       province: "",
-      country: "",
       profileImageUrl: "",
     },
   });
@@ -51,6 +68,7 @@ export function ClientProfileForm({ defaultValues, onSubmit, isSubmitting }) {
             </FormItem>
           )}
         />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -65,15 +83,31 @@ export function ClientProfileForm({ defaultValues, onSubmit, isSubmitting }) {
               </FormItem>
             )}
           />
+
           <FormField
             control={form.control}
             name="province"
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Province</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Punjab" {...field} />
-                </FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a province" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {PROVINCES.map((prov) => (
+                      <SelectItem key={prov} value={prov}>
+                        {prov}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
@@ -82,33 +116,27 @@ export function ClientProfileForm({ defaultValues, onSubmit, isSubmitting }) {
 
         <FormField
           control={form.control}
-          name="country"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Country</FormLabel>
-              <FormControl>
-                <Input placeholder="e.g. Pakistan" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
           name="profileImageUrl"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Profile Image URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://..." {...field} />
+                <Input
+                  placeholder="https://example.com/avatar.jpg"
+                  {...field}
+                />
               </FormControl>
+              <FormDescription>
+                Provide a direct link to your profile image.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Save Profile
+          Save Personal Info
         </Button>
       </form>
     </Form>
