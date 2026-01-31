@@ -1,7 +1,9 @@
 import {
   LayoutDashboard,
-  FolderKanban,
+  Briefcase,
   UserCheck,
+  User,
+  Gavel
 } from "lucide-react";
 
 export const clerkSidebarItems = [
@@ -14,11 +16,16 @@ export const clerkSidebarItems = [
   {
     title: "Submitted Cases",
     url: "/dashboard/clerk/cases",
-    icon: FolderKanban,
+    icon: Gavel,
   },
   {
     title: "Court Officers",
-    url: "/dashboard/clerk/court-officers",
+    url: "/dashboard/clerk/court-officer",
     icon: UserCheck,
+  },
+  {
+    title: "Profile",
+    url: "/dashboard/clerk/profile",
+    icon: User,
   },
 ];
