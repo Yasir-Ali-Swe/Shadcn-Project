@@ -3,6 +3,7 @@ import {
   HandHelping,
   UserPen,
   MessageCircle,
+  Gavel,
 } from "lucide-react";
 
 export const clientSidebarItems = [
@@ -11,6 +12,11 @@ export const clientSidebarItems = [
     url: "/dashboard/client",
     icon: LayoutDashboard,
     exact: true,
+  },
+  {
+    title: "Cases",
+    url: "/dashboard/client/cases",
+    icon: Gavel,
   },
   {
     title: "Proposals",
