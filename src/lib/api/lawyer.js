@@ -21,5 +21,25 @@ export const lawyerApi = {
     updateProposalStatus: async (proposalId, status) => {
         const response = await api.put("/lawyer/update-proposal-status", { proposalId, status });
         return response.data;
+    },
+    updateAccount: async (data) => {
+        const response = await api.put("/lawyer/update-account", data);
+        return response.data;
+    },
+    updateInfo: async (data) => {
+        const response = await api.put("/lawyer/update-info", data);
+        return response.data;
+    },
+    getProfile: async () => {
+        const response = await api.get("/lawyer/get-lawyer-profile");
+        return response.data;
+    },
+    updateProfile: async (data) => {
+        const response = await api.put("/lawyer/update-lawyer-profile", data);
+        return response.data;
+    },
+    getPublicLawyers: async () => {
+        const response = await api.get("/lawyer/public/all");
+        return response.data;
     }
 };
