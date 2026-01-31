@@ -13,6 +13,10 @@ export const clientApi = {
         const response = await api.put("/client/update-profile", data);
         return response.data;
     },
+    updateAccount: async (data) => {
+        const response = await api.put("/client/update-account", data);
+        return response.data;
+    },
     sendProposal: async (data) => {
         const response = await api.post("/client/send-proposal", data);
         return response.data;
@@ -28,6 +32,10 @@ export const clientApi = {
     },
     getCaseById: async (caseId) => {
         const response = await api.get(`/case/client/cases/${caseId}`);
+        return response.data;
+    },
+    draftCase: async (data) => {
+        const response = await api.post("/case/client/draft", data);
         return response.data;
     }
 };
