@@ -26,7 +26,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import Link from "next/link";
-import { useState } from "react";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
@@ -37,7 +37,6 @@ const formSchema = z.object({
 const page = () => {
   const router = useRouter();
   const dispatch = useDispatch();
-  const [error, setError] = useState("");
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -50,12 +49,15 @@ const page = () => {
   const loginMutation = useMutation({
     mutationFn: authApi.login,
     onSuccess: (data) => {
+      toast.success("Login successful");
       authApi.getMe().then((meData) => {
         if (meData.success) {
           const normalizedRole = meData.user.role.replace("_", "-");
           dispatch(setUser(meData.user));
           if (!meData.user.isProfileComplete) {
             router.push(`/dashboard/${normalizedRole}/complete-profile`);
+          } else if (meData.user.role === "client") {
+            router.push("/lawyers-listing");
           } else {
             router.push(`/dashboard/${normalizedRole}`);
           }
@@ -63,12 +65,11 @@ const page = () => {
       });
     },
     onError: (err) => {
-      setError(err.response?.data?.message || "Login failed");
+      toast.error(err.response?.data?.message || "Login failed");
     },
   });
 
   function onSubmit(values) {
-    setError("");
     loginMutation.mutate(values);
   }
 
@@ -110,8 +111,6 @@ const page = () => {
                   </FormItem>
                 )}
               />
-
-              {error && <p className="text-sm text-red-500">{error}</p>}
 
               <Button
                 type="submit"
