@@ -61,7 +61,7 @@ const DashboardSidebar = () => {
         <SidebarGroup>
           <SidebarGroupLabel>
             {currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}{" "}
-            Dashboard ({role || "null"})
+            Dashboard
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
