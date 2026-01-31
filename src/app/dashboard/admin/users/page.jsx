@@ -73,7 +73,7 @@ function CreateUserDialog({ open, onOpenChange }) {
   const mutation = useMutation({
     mutationFn: adminApi.createInternalUser,
     onSuccess: () => {
-      toast.success("User created successfully");
+      toast.success("User created successfully. Credentials sent via email.");
       queryClient.invalidateQueries(["internalUsers"]);
       onOpenChange(false);
       form.reset();
