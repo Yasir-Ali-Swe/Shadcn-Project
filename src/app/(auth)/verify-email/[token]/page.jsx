@@ -1,9 +1,10 @@
 "use client";
-
-import { useEffect, useState, use, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { authApi } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,69 +12,55 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
-export default function VerifyEmailPage({ params }) {
-  const { token } = use(params);
+const VerifyEmailPage = () => {
+  const { token } = useParams();
   const router = useRouter();
-  const [status, setStatus] = useState("verifying"); // verifying, success, error
-  const [message, setMessage] = useState("Verifying your email...");
+  const [isVerifying, setIsVerifying] = useState(true);
 
   const verifyMutation = useMutation({
     mutationFn: authApi.verifyEmail,
     onSuccess: (data) => {
-      setStatus("success");
-      setMessage(data.message || "Email verified successfully!");
+      toast.success(data?.message || "Email verified successfully");
+      router.push("/login");
     },
     onError: (err) => {
-      setStatus("error");
-      setMessage(
-        err.response?.data?.message ||
-          "Verification failed. Invalid or expired token.",
-      );
+      toast.error(err.response?.data?.message || "Verification failed");
+      setIsVerifying(false); // Stop loading to show error state (or could redirect)
     },
   });
 
-  const effectRan = useRef(false);
-
   useEffect(() => {
-    if (token && !effectRan.current) {
+    if (token) {
       verifyMutation.mutate(token);
-      effectRan.current = true;
     }
   }, [token]);
 
   return (
-    <Card className="w-full max-w-sm text-center">
+    <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle>Email Verification</CardTitle>
-        <CardDescription>
-          {status === "verifying" &&
-            "Please wait while we verify your email address."}
-          {status === "success" && "Your email has been successfully verified."}
-          {status === "error" && "There was an issue verifying your email."}
-        </CardDescription>
+        <CardDescription>Verifying your email address...</CardDescription>
       </CardHeader>
-      <CardContent>
-        <p
-          className={`mb-4 text-sm ${status === "error" ? "text-red-500" : "text-gray-600"}`}
-        >
-          {message}
-        </p>
-
-        {status === "success" && (
-          <Button asChild className="w-full">
-            <Link href="/login">Go to Login</Link>
-          </Button>
-        )}
-
-        {status === "error" && (
-          <Button asChild variant="outline" className="w-full">
-            <Link href="/login">Back to Login</Link>
-          </Button>
+      <CardContent className="flex flex-col items-center justify-center space-y-4">
+        {isVerifying ? (
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="mt-2 text-sm text-muted-foreground">Please wait...</p>
+          </div>
+        ) : (
+          <div className="flex flex-col w-full gap-2">
+            <p className="text-center text-sm text-red-500">
+              Verification failed. The token may be invalid or expired.
+            </p>
+            <Button onClick={() => router.push("/login")}>Back to Login</Button>
+          </div>
         )}
       </CardContent>
     </Card>
   );
-}
+};
+
+export default VerifyEmailPage;
