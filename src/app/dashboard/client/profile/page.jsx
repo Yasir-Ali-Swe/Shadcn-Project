@@ -1,94 +1,185 @@
 "use client";
 
-import { ClientProfileForm } from "@/components/dashboard/client/ClientProfileForm";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientApi } from "@/lib/api/client";
+import { authApi } from "@/lib/api/auth";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, User, UserCog } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ClientAccountForm } from "@/components/dashboard/client/ClientAccountForm";
+import { ClientProfileForm } from "@/components/dashboard/client/ClientProfileForm";
 
-export default function ClientEditProfilePage() {
+import { useDispatch } from "react-redux";
+import { setUser } from "@/store/slices/auth-slice";
+
+export default function ClientProfilePage() {
   const queryClient = useQueryClient();
+  const dispatch = useDispatch();
 
+  // Query for Account Details (Base User Info)
+  const { data: authData, isLoading: isAuthLoading } = useQuery({
+    queryKey: ["authUser"],
+    queryFn: authApi.getMe,
+  });
+
+  // Query for Personal Info (Client Profile)
   const {
-    data: result,
-    isLoading,
-    error,
+    data: profileData,
+    isLoading: isProfileLoading,
+    error: profileError,
   } = useQuery({
     queryKey: ["clientProfile"],
     queryFn: clientApi.getProfile,
-    retry: false, // Don't retry on 404
+    retry: false,
   });
 
-  const isProfileNotFound = error?.response?.status === 404;
-  const isEditing = !isProfileNotFound && !!result;
+  const isProfileNotFound = profileError?.response?.status === 404;
+  const isEditingProfile = !isProfileNotFound && !!profileData;
 
-  const mutation = useMutation({
-    mutationFn: (values) => {
-      // If we are editing, update. If not found (404), create.
-      if (isEditing) {
-        return clientApi.updateProfile(values);
-      } else {
-        return clientApi.createProfile(values);
+  // Mutation for Account Details
+  const accountMutation = useMutation({
+    mutationFn: clientApi.updateAccount,
+    onSuccess: (response) => {
+      toast.success("Account details updated successfully");
+      queryClient.invalidateQueries(["authUser"]);
+
+      // Update Redux if user exists
+      if (user) {
+        dispatch(
+          setUser({
+            ...user,
+            ...response.data,
+          }),
+        );
       }
     },
-    onSuccess: () => {
+    onError: (err) => {
+      toast.error(err.response?.data?.message || "Failed to update account");
+    },
+  });
+
+  // Mutation for Personal Info
+  const profileMutation = useMutation({
+    mutationFn: (values) => {
+      return isEditingProfile
+        ? clientApi.updateProfile(values)
+        : clientApi.createProfile(values);
+    },
+    onSuccess: (data) => {
       toast.success(
-        isEditing
-          ? "Profile updated successfully!"
+        isEditingProfile
+          ? "Personal information updated!"
           : "Profile created successfully!",
       );
       queryClient.invalidateQueries(["clientProfile"]);
 
-      // If we just created it, we might need to refresh auth state if it was previously incomplete
-      // But typically Edit Profile is accessed when already complete.
-      // Safest is to just invalidate and let the user continue.
+      // If we just created the profile, we should arguably refresh auth user too
+      // because isProfileComplete might have changed on the backend
+      queryClient.invalidateQueries(["authUser"]);
     },
     onError: (err) => {
       toast.error(err.response?.data?.message || "Failed to save profile");
     },
   });
 
-  if (isLoading)
+  if (isAuthLoading) {
     return (
       <div className="flex justify-center p-8">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     );
+  }
 
-  const profile = result?.clientProfile;
+  const user = authData?.data?.user;
+  const clientProfile = profileData?.clientProfile;
 
   return (
-    <div className="max-w-2xl mx-auto py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">
-          {isEditing ? "Edit Profile" : "Create Profile"}
-        </h1>
+    <div className="space-y-6 pt-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Profile Settings</h2>
         <p className="text-muted-foreground">
-          {isEditing
-            ? "Update your personal information."
-            : "Please create your profile to continue."}
+          Manage your account settings and personal information.
         </p>
       </div>
 
-      <div className="border rounded-lg p-6 bg-card">
-        <ClientProfileForm
-          defaultValues={
-            isEditing
-              ? {
-                  dob: profile?.dob
-                    ? new Date(profile.dob).toISOString().split("T")[0]
-                    : "",
-                  city: profile?.city || "",
-                  province: profile?.province || "",
-                  country: profile?.country || "",
-                  profileImageUrl: profile?.profileImageUrl || "",
-                }
-              : undefined
-          } // undefined defaults to empty in form component
-          onSubmit={(values) => mutation.mutate(values)}
-          isSubmitting={mutation.isPending}
-        />
-      </div>
+      <Tabs defaultValue="account" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="account" className="flex items-center gap-2">
+            <UserCog className="h-4 w-4" />
+            Account Details
+          </TabsTrigger>
+          <TabsTrigger value="personal" className="flex items-center gap-2">
+            <User className="h-4 w-4" />
+            Personal Information
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="account">
+          <Card>
+            <CardHeader>
+              <CardTitle>Account Details</CardTitle>
+              <CardDescription>
+                Update your login coordinates and display name.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <ClientAccountForm
+                defaultValues={{
+                  fullName: user?.fullName || "",
+                  email: user?.email || "",
+                }}
+                onSubmit={(values) => accountMutation.mutate(values)}
+                isSubmitting={accountMutation.isPending}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="personal">
+          <Card>
+            <CardHeader>
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>
+                Provide your details to complete your profile and access full
+                features.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {isProfileLoading ? (
+                <div className="flex justify-center p-4">
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                </div>
+              ) : (
+                <ClientProfileForm
+                  defaultValues={
+                    isEditingProfile
+                      ? {
+                          dob: clientProfile?.dob
+                            ? new Date(clientProfile.dob)
+                                .toISOString()
+                                .split("T")[0]
+                            : "",
+                          city: clientProfile?.city || "",
+                          province: clientProfile?.province || "",
+                          profileImageUrl: clientProfile?.profileImageUrl || "",
+                        }
+                      : undefined
+                  }
+                  onSubmit={(values) => profileMutation.mutate(values)}
+                  isSubmitting={profileMutation.isPending}
+                />
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
