@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/card";
 import { Plus } from "lucide-react";
 
-import { dummyCases } from "@/lib/dummy-data/cases";
+// import { dummyCases } from "@/lib/dummy-data/cases";
 
 export default function CasesPage() {
   const {
@@ -40,11 +40,7 @@ export default function CasesPage() {
     return <div className="p-8">Loading cases...</div>;
   }
 
-  // Use dummy data if error occurs or (optional strategy) if array is empty
-  // Prompt says: "If data is null, undefined, or empty array -> fall back"
-  // result?.data is the array.
-  const apiCases = result?.data;
-  const cases = apiCases && apiCases.length > 0 ? apiCases : dummyCases;
+  const cases = result?.data || [];
 
   return (
     <div className="space-y-6 pt-6">
@@ -89,8 +85,10 @@ export default function CasesPage() {
                 <TableRow>
                   <TableHead>Case Number</TableHead>
                   <TableHead>Title</TableHead>
+                  <TableHead>Client</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Submission Status</TableHead>
+                  <TableHead>Case Status</TableHead>
                   <TableHead>Date Filed</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -99,10 +97,42 @@ export default function CasesPage() {
                 {cases.map((c) => (
                   <TableRow key={c._id}>
                     <TableCell className="font-medium">
-                      {c.caseNumber || "Draft (No Number)"}
+                      {c.caseNumber || (
+                        <span className="text-muted-foreground italic">
+                          Draft
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell>{c.title}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {c.clientId?.fullName || "N/A"}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                          {c.clientId?.email}
+                        </span>
+                      </div>
+                    </TableCell>
                     <TableCell>{c.type}</TableCell>
+                    <TableCell>
+                      {c.submissionStatus === "draft" && (
+                        <Badge variant="secondary">Draft</Badge>
+                      )}
+                      {c.submissionStatus === "submitted" && (
+                        <Badge className="bg-blue-600 hover:bg-blue-700">
+                          Submitted
+                        </Badge>
+                      )}
+                      {c.submissionStatus === "registered" && (
+                        <Badge
+                          variant="outline"
+                          className="text-green-700 border-green-600 bg-green-50"
+                        >
+                          Registered
+                        </Badge>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant={
