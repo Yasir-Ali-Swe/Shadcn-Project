@@ -14,6 +14,10 @@ export const adminApi = {
         const response = await api.put("/admin/update-profile", data);
         return response.data;
     },
+    updateAccount: async (data) => {
+        const response = await api.put("/admin/update-account", data);
+        return response.data;
+    },
 
     // Users (Internal)
     getAllInternalUsers: async (role) => {
