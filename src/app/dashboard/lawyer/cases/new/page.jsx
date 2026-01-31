@@ -2,7 +2,7 @@
 
 import { CaseForm } from "@/components/dashboard/lawyer/cases/CaseForm";
 import { useRouter } from "next/navigation";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { casesApi } from "@/lib/api/cases";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
@@ -12,6 +12,11 @@ import { Button } from "@/components/ui/button";
 export default function NewCasePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+
+  const { data: clientsResult, isLoading: clientsLoading } = useQuery({
+    queryKey: ["acceptedClients"],
+    queryFn: casesApi.getAcceptedClients,
+  });
 
   const createMutation = useMutation({
     mutationFn: casesApi.createDraft,
@@ -27,6 +32,12 @@ export default function NewCasePage() {
     },
   });
 
+  if (clientsLoading) {
+    return <div className="p-8">Loading client data...</div>;
+  }
+
+  const clients = clientsResult?.data || [];
+
   return (
     <div className="space-y-6 pt-6 max-w-5xl mx-auto">
       <div className="flex items-center gap-4">
@@ -38,7 +49,8 @@ export default function NewCasePage() {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Draft New Case</h2>
           <p className="text-muted-foreground">
-            Fill in the initial details to start a new case file.
+            Fill in the initial details to start a new case file. You must
+            select a client with an accepted proposal.
           </p>
         </div>
       </div>
@@ -47,6 +59,7 @@ export default function NewCasePage() {
         onSubmit={(values) => createMutation.mutate(values)}
         isSubmitting={createMutation.isPending}
         mode="create"
+        clients={clients}
       />
     </div>
   );
