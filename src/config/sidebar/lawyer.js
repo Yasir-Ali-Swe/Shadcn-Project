@@ -25,7 +25,7 @@ export const lawyerSidebarItems = [
   },
   {
     title: "Profile",
-    url: "/dashboard/lawyer/profile",
+    url: "/dashboard/lawyer/profile", // This assumes existence. 
     icon: UserPen,
   },
   {
