@@ -20,10 +20,16 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Check, X } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { toast } from "sonner"; // Assuming sonner is used for toasts, seen file sonner.jsx
 import { useState } from "react";
 
-import { dummyProposals } from "@/lib/dummy-data/proposals";
+// import { dummyProposals } from "@/lib/dummy-data/proposals";
 
 export default function ProposalsPage() {
   const queryClient = useQueryClient();
@@ -56,13 +62,7 @@ export default function ProposalsPage() {
 
   if (isLoading) return <div className="p-8">Loading proposals...</div>;
 
-  // Logic: Real data takes precedence. If error (including 404) or empty, use dummy.
-  // Note: If filter is active, maybe we should filter dummy data too?
-  // For simplicity, just showing all dummy data if API fails/empty is fine for "mock".
-
-  const apiProposals = result?.data;
-  const proposals =
-    apiProposals && apiProposals.length > 0 ? apiProposals : dummyProposals;
+  const proposals = result?.data || [];
 
   return (
     <div className="space-y-6 pt-6">
@@ -95,12 +95,21 @@ export default function ProposalsPage() {
                 <TableHead>Client Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Title</TableHead>
-                <TableHead>Budget</TableHead>
+
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
+              {proposals.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center">
+                    <div className="text-center py-8 text-muted-foreground">
+                      No proposal found.
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
               {proposals.map((p) => (
                 <TableRow key={p._id}>
                   <TableCell className="font-medium">
@@ -108,7 +117,7 @@ export default function ProposalsPage() {
                   </TableCell>
                   <TableCell>{p.clientId?.email}</TableCell>
                   <TableCell>{p.title}</TableCell>
-                  <TableCell>{p.budget ? `$${p.budget}` : "-"}</TableCell>
+
                   <TableCell>
                     <Badge
                       variant={
@@ -123,26 +132,79 @@ export default function ProposalsPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {p.status === "pending" && (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 w-8 p-0 border-green-500 text-green-600 hover:bg-green-50"
-                          onClick={() => handleAction(p._id, "accepted")}
-                        >
-                          <Check className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 w-8 p-0 border-red-500 text-red-600 hover:bg-red-50"
-                          onClick={() => handleAction(p._id, "rejected")}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex justify-end gap-2">
+                      {/* Accept Action */}
+                      {(p.status === "pending" || p.status === "accepted") && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className={`h-8 w-8 p-0 ${
+                                  p.status === "accepted"
+                                    ? "bg-green-100 text-green-700 border-green-500 opacity-100 cursor-not-allowed"
+                                    : "border-green-500 text-green-600 hover:bg-green-50"
+                                }`}
+                                onClick={() =>
+                                  p.status === "pending" &&
+                                  handleAction(p._id, "accepted")
+                                }
+                                disabled={
+                                  p.status !== "pending" ||
+                                  updateStatusMutation.isPending
+                                }
+                              >
+                                <Check className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {p.status === "accepted"
+                                  ? "Proposal Accepted"
+                                  : "Accept Proposal"}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+
+                      {/* Reject Action */}
+                      {(p.status === "pending" || p.status === "rejected") && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className={`h-8 w-8 p-0 ${
+                                  p.status === "rejected"
+                                    ? "bg-red-100 text-red-700 border-red-500 opacity-100 cursor-not-allowed"
+                                    : "border-red-500 text-red-600 hover:bg-red-50"
+                                }`}
+                                onClick={() =>
+                                  p.status === "pending" &&
+                                  handleAction(p._id, "rejected")
+                                }
+                                disabled={
+                                  p.status !== "pending" ||
+                                  updateStatusMutation.isPending
+                                }
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>
+                                {p.status === "rejected"
+                                  ? "Proposal Rejected"
+                                  : "Reject Proposal"}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -150,7 +212,6 @@ export default function ProposalsPage() {
           </Table>
         </CardContent>
       </Card>
-      {/* Messages page implementation pending next step */}
     </div>
   );
 }
