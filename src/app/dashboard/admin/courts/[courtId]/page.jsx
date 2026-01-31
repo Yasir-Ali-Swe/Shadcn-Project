@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { adminApi } from "@/lib/api/admin";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,10 @@ import { Separator } from "@/components/ui/separator";
 export default function AdminCourtDetailPage({ params }) {
   const { courtId } = use(params);
   const queryClient = useQueryClient();
-  const [selectedClerk, setSelectedClerk] = useState("");
-  const [selectedOfficer, setSelectedOfficer] = useState("");
+
+  // State must be unconditional
+  const [clerkId, setClerkId] = useState(undefined);
+  const [officerId, setOfficerId] = useState(undefined);
 
   // 1. Fetch Court Data
   const { data: courtData, isLoading: courtLoading } = useQuery({
@@ -55,7 +57,6 @@ export default function AdminCourtDetailPage({ params }) {
       toast.success("Clerk assigned successfully");
       queryClient.invalidateQueries(["court", courtId]);
       queryClient.invalidateQueries(["unassignedClerks"]);
-      setSelectedClerk("");
     },
     onError: (err) =>
       toast.error(err.response?.data?.message || "Assignment failed"),
@@ -67,28 +68,103 @@ export default function AdminCourtDetailPage({ params }) {
       toast.success("Officer assigned successfully");
       queryClient.invalidateQueries(["court", courtId]);
       queryClient.invalidateQueries(["unassignedOfficers"]);
-      setSelectedOfficer("");
     },
     onError: (err) =>
       toast.error(err.response?.data?.message || "Assignment failed"),
   });
-
-  if (courtLoading)
-    return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    );
 
   const court = courtData?.court;
   const assignedOfficers = courtData?.assignedOfficers || [];
   const unassignedClerks = clerksData?.data || [];
   const unassignedOfficers = officersData?.data || [];
 
+  // Sync state with loaded data when available and state is still undefined
+  useEffect(() => {
+    if (court && clerkId === undefined) {
+      setClerkId(court.clerkId?._id || "none");
+    }
+    if (assignedOfficers && officerId === undefined) {
+      setOfficerId(
+        assignedOfficers.length > 0 ? assignedOfficers[0].userId._id : "none",
+      );
+    }
+  }, [court, assignedOfficers, clerkId, officerId]);
+
+  if (courtLoading) {
+    return (
+      <div className="flex justify-center p-8">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+  const allClerkOptions = [...unassignedClerks];
+  if (court?.clerkId) {
+    if (!allClerkOptions.some((c) => c._id === court.clerkId._id)) {
+      allClerkOptions.push({
+        _id: court.clerkId._id,
+        fullName: court.clerkId.fullName,
+        email: court.clerkId.email,
+      });
+    }
+  }
+
+  const allOfficerOptions = [...unassignedOfficers];
+  const currentOfficer =
+    assignedOfficers.length > 0 ? assignedOfficers[0].userId : null;
+  if (currentOfficer) {
+    if (!allOfficerOptions.some((o) => o._id === currentOfficer._id)) {
+      allOfficerOptions.push({
+        _id: currentOfficer._id,
+        fullName: currentOfficer.fullName,
+        email: currentOfficer.email,
+      });
+    }
+  }
+  const isDirty =
+    (clerkId !== undefined && clerkId !== (court?.clerkId?._id || "none")) ||
+    (officerId !== undefined &&
+      officerId !== (assignedOfficers[0]?.userId?._id || "none"));
+
+  const handleSave = async () => {
+    const promises = [];
+
+    // Clerk Change
+    const originalClerkId = court?.clerkId?._id || "none";
+    if (clerkId && clerkId !== "none" && clerkId !== originalClerkId) {
+      promises.push(
+        assignClerkMutation.mutateAsync({
+          clerkId,
+          courtId: court._id,
+        }),
+      );
+    }
+
+    // Officer Change
+    const originalOfficerId = assignedOfficers[0]?.userId?._id || "none";
+    if (officerId && officerId !== "none" && officerId !== originalOfficerId) {
+      promises.push(
+        assignOfficerMutation.mutateAsync({
+          userId: officerId,
+          courtId: court._id,
+        }),
+      );
+    }
+
+    try {
+      await Promise.all(promises);
+      // Toast handled by mutation onSuccess?
+      // Actually mutations have built-in toasts.
+      // We might want to disable built-in toasts if doing batch?
+      // But for now, letting them pop is fine or we can show one "Saved" here.
+    } catch (e) {
+      // handled
+    }
+  };
+
   if (!court) return <div className="p-8">Court not found</div>;
 
   return (
-    <div className="space-y-6 pt-6 pb-12">
+    <div className="lg:w-[60%] space-y-6 pt-6 pb-12">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">{court.name}</h2>
         <div className="flex items-center gap-2 text-muted-foreground mt-1">
@@ -99,160 +175,89 @@ export default function AdminCourtDetailPage({ params }) {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* CLERK ASSIGNMENT */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Gavel className="h-5 w-5" />
-              Clerk Assignment
-            </CardTitle>
-            <CardDescription>
-              Only one clerk can be assigned per court.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {court.clerkId ? (
-              <div className="p-4 bg-muted/50 rounded-lg flex items-center justify-between">
-                <div>
-                  <p className="font-medium">{court.clerkId.fullName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {court.clerkId.email}
-                  </p>
-                </div>
-                <Badge variant="default">Assigned</Badge>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Select
-                    value={selectedClerk}
-                    onValueChange={setSelectedClerk}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a clerk..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {unassignedClerks.length === 0 ? (
-                        <SelectItem value="none" disabled>
-                          No available clerks
-                        </SelectItem>
-                      ) : (
-                        unassignedClerks.map((c) => (
-                          <SelectItem key={c._id} value={c._id}>
-                            {c.fullName}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  className="w-full"
-                  disabled={!selectedClerk || assignClerkMutation.isPending}
-                  onClick={() =>
-                    assignClerkMutation.mutate({
-                      clerkId: selectedClerk,
-                      courtId: court._id,
-                    })
-                  }
-                >
-                  {assignClerkMutation.isPending && (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  )}
-                  Assign Clerk
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Court Assignment
+          </CardTitle>
+          <CardDescription>
+            Assign a Clerk and Court Officer to manage this court.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* CLERK SELECT */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Select Clerk
+              </label>
+              <Select
+                value={clerkId}
+                onValueChange={setClerkId}
+                disabled={unassignedClerks.length === 0 && !court.clerkId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a clerk" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Clerk Assigned</SelectItem>
+                  {allClerkOptions.map((c) => (
+                    <SelectItem key={c._id} value={c._id}>
+                      {c.fullName} ({c.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* COURT OFFICERS */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Court Officers
-            </CardTitle>
-            <CardDescription>
-              Manage security and officers for this court.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Assign New */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Select
-                  value={selectedOfficer}
-                  onValueChange={setSelectedOfficer}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Add an officer..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {unassignedOfficers.length === 0 ? (
-                      <SelectItem value="none" disabled>
-                        No available officers
-                      </SelectItem>
-                    ) : (
-                      unassignedOfficers.map((o) => (
-                        <SelectItem key={o._id} value={o._id}>
-                          {o.fullName}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button
-                className="w-full"
-                variant="outline"
-                disabled={!selectedOfficer || assignOfficerMutation.isPending}
-                onClick={() =>
-                  assignOfficerMutation.mutate({
-                    userId: selectedOfficer,
-                    courtId: court._id,
-                  })
+            {/* OFFICER SELECT */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Select Court Officer
+              </label>
+              <Select
+                value={officerId}
+                onValueChange={setOfficerId}
+                disabled={
+                  unassignedOfficers.length === 0 &&
+                  assignedOfficers.length === 0
                 }
               >
-                {assignOfficerMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                )}
-                Add Officer
-              </Button>
-            </div>
-
-            <Separator />
-
-            {/* List Existing */}
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">
-                Assigned Officers ({assignedOfficers.length})
-              </h4>
-              {assignedOfficers.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">
-                  No officers assigned yet.
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {assignedOfficers.map((officer) => (
-                    <div
-                      key={officer._id}
-                      className="flex justify-between items-center p-2 rounded hover:bg-muted/50 text-sm"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-green-500" />
-                        <span>{officer.userId?.fullName || "Unknown"}</span>
-                      </div>
-                      {/* Future: Unassign Button */}
-                    </div>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an officer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Officer Assigned</SelectItem>
+                  {allOfficerOptions.map((o) => (
+                    <SelectItem key={o._id} value={o._id}>
+                      {o.fullName} ({o.email})
+                    </SelectItem>
                   ))}
-                </div>
-              )}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+
+          <div className="flex justify-end pt-4">
+            <Button
+              onClick={handleSave}
+              disabled={
+                !isDirty ||
+                assignClerkMutation.isPending ||
+                assignOfficerMutation.isPending
+              }
+              className="min-w-[150px]"
+            >
+              {(assignClerkMutation.isPending ||
+                assignOfficerMutation.isPending) && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              Save Assignments
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
