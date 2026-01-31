@@ -24,13 +24,13 @@ export const clientSidebarItems = [
     icon: HandHelping,
   },
   {
-    title: "Profile",
-    url: "/dashboard/client/profile",
-    icon: UserPen,
-  },
-  {
     title: "Messages",
     url: "/dashboard/client/messages",
     icon: MessageCircle,
+  },
+  {
+    title: "Profile",
+    url: "/dashboard/client/profile",
+    icon: UserPen,
   },
 ];
