@@ -24,8 +24,9 @@ export const clerkApi = {
     },
 
     // Cases (From Case Routes)
-    getSubmittedCases: async () => {
-        const response = await api.get("/case/get-submited-cases");
+    getSubmittedCases: async (status) => {
+        const query = status ? `?status=${status}` : "";
+        const response = await api.get(`/case/get-submited-cases${query}`);
         return response.data;
     },
 
@@ -36,22 +37,9 @@ export const clerkApi = {
         return response.data;
     },
 
-    // Case Details (Lawyer/Client routes protect this usually, 
-    // but Clerk needs to view details to register. 
-    // Is there a generic 'getCase' for Clerk? 
-    // 'clientGetCaseById' enforces 'isParty'.
-    // 'lawyerGetTheCaseById' enforces 'lawyerId'.
-    // Clerk needs their own 'getCase' or we rely on listed data.
-    // Wait, I should add 'clerkGetCaseById' if needed. 
-    // For now, I will trust the list view provides enough, 
-    // or I might need to add 'clerkGetCaseById' to backend if Detail page is required.
-    // UPDATE: User asked for "Case Detail Page".
-    // I need to check if Clerk can fetch a single case.
-    // 'clerkRegisterCase' exists but no 'clerkGetCase'.
-    // I will rely on 'clerkGetSubmitedCases' which returns full case objects?
-    // Or I will add 'clerkGetCaseById' to backend if I get stuck. 
-    // Let's assume for now I might need it.
-
-    // Actually, I can use the list data or just add a simple `get-case/:caseId` for clerk in case-controller.
-    // I'll add `getCaseById` to the backend now to be safe.
+    // Case Details
+    getCaseById: async (caseId) => {
+        const response = await api.get(`/case/clerk/case/${caseId}`);
+        return response.data;
+    },
 };
