@@ -1,6 +1,9 @@
 "use client";
-import { getSidebarItemsByRole } from "@/lib/sidbar";
-import React from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { clearUser } from "@/store/slices/auth-slice";
+import { authApi } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { LogOut } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -11,15 +14,34 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarHeader,
+  SidebarFooter,
 } from "./ui/sidebar";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-const role = "lawyer";
-const links = getSidebarItemsByRole(role);
-console.log(links);
+import { getSidebarItemsByRole } from "@/lib/sidbar";
 
 const DashboardSidebar = () => {
   const pathname = usePathname();
+  const dispatch = useDispatch();
+  const router = useRouter();
+  const { role, user } = useSelector((state) => state.auth);
+
+  // Guard against null role during initial load, though AuthGuard should handle this locally if wrapped.
+  const currentRole = role || "";
+  const links = getSidebarItemsByRole(currentRole);
+
+  const handleLogout = async () => {
+    try {
+      if (user?.email) {
+        await authApi.logout(user.email);
+      }
+    } catch (error) {
+      console.error("Logout failed", error);
+    } finally {
+      dispatch(clearUser());
+      router.push("/login");
+    }
+  };
 
   return (
     <Sidebar className="bg-sidebar text-sidebar-foreground">
@@ -38,7 +60,8 @@ const DashboardSidebar = () => {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>
-            {role.charAt(0).toUpperCase() + role.slice(1)} Dashboard
+            {currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}{" "}
+            Dashboard ({role || "null"})
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -61,7 +84,7 @@ const DashboardSidebar = () => {
                       className="rounded-full text-lg [&>svg]:size-5"
                     >
                       <Link href={item.url} className="flex items-center gap-2">
-                        <item.icon />
+                        {item.icon && <item.icon />}
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -72,6 +95,20 @@ const DashboardSidebar = () => {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              onClick={handleLogout}
+              className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Logout</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 };
