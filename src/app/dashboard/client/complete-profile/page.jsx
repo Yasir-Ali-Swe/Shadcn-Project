@@ -1,3 +1,4 @@
+"use client";
 import { ClientProfileForm } from "@/components/dashboard/client/ClientProfileForm";
 import { useMutation } from "@tanstack/react-query";
 import { clientApi } from "@/lib/api/client";
