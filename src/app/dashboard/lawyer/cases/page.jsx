@@ -103,13 +103,23 @@ export default function CasesPage() {
                         </span>
                       )}
                     </TableCell>
-                    <TableCell>{c.title}</TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <div className="truncate" title={c.title}>
+                        {c.title}
+                      </div>
+                    </TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
+                      <div className="flex flex-col max-w-[150px]">
+                        <span
+                          className="font-medium truncate"
+                          title={c.clientId?.fullName}
+                        >
                           {c.clientId?.fullName || "N/A"}
                         </span>
-                        <span className="text-xs text-muted-foreground truncate max-w-[150px]">
+                        <span
+                          className="text-xs text-muted-foreground truncate"
+                          title={c.clientId?.email}
+                        >
                           {c.clientId?.email}
                         </span>
                       </div>
