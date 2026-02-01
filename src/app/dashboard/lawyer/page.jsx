@@ -105,11 +105,14 @@ export default function LawyerDashboardPage() {
                 {recentActivity.map((item) => (
                   <div key={item._id} className="flex items-center">
                     <Clock className="mr-4 h-4 w-4 text-muted-foreground" />
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium leading-none">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <p
+                        className="text-sm font-medium leading-none truncate"
+                        title={item.title}
+                      >
                         {item.title}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground truncate">
                         {item.caseNumber || "Draft Case"}
                       </p>
                     </div>
