@@ -112,11 +112,21 @@ export default function ProposalsPage() {
               )}
               {proposals.map((p) => (
                 <TableRow key={p._id}>
-                  <TableCell className="font-medium">
-                    {p.clientId?.fullName || "Unknown"}
+                  <TableCell className="font-medium max-w-[150px]">
+                    <div className="truncate" title={p.clientId?.fullName}>
+                      {p.clientId?.fullName || "Unknown"}
+                    </div>
                   </TableCell>
-                  <TableCell>{p.clientId?.email}</TableCell>
-                  <TableCell>{p.title}</TableCell>
+                  <TableCell className="max-w-[200px]">
+                    <div className="truncate" title={p.clientId?.email}>
+                      {p.clientId?.email}
+                    </div>
+                  </TableCell>
+                  <TableCell className="max-w-[250px]">
+                    <div className="truncate" title={p.title}>
+                      {p.title}
+                    </div>
+                  </TableCell>
 
                   <TableCell>
                     <Badge
