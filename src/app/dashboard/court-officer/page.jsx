@@ -120,10 +120,15 @@ export default function CourtOfficerDashboardPage() {
                   key={item._id}
                   className="border-b transition-colors hover:bg-muted/50"
                 >
-                  <td className="p-4 align-middle font-medium">
-                    <div className="flex flex-col">
-                      <span>{item.caseId?.title}</span>
-                      <span className="text-xs text-muted-foreground">
+                  <td className="p-4 align-middle font-medium max-w-[200px]">
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate" title={item.caseId?.title}>
+                        {item.caseId?.title}
+                      </span>
+                      <span
+                        className="text-xs text-muted-foreground truncate"
+                        title={item.caseId?.caseNumber}
+                      >
                         {item.caseId?.caseNumber}
                       </span>
                     </div>
@@ -131,7 +136,10 @@ export default function CourtOfficerDashboardPage() {
                   <td className="p-4 align-middle">
                     {format(new Date(item.date), "PPP - p")}
                   </td>
-                  <td className="p-4 align-middle truncate max-w-[200px]">
+                  <td
+                    className="p-4 align-middle truncate max-w-[200px]"
+                    title={item.remarks}
+                  >
                     {item.remarks}
                   </td>
                   <td className="p-4 align-middle text-right">
