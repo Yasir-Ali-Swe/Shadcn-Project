@@ -4,6 +4,7 @@ import {
   UserPen,
   MessageCircle,
   Gavel,
+  Bell,
 } from "lucide-react";
 
 export const clientSidebarItems = [
@@ -27,6 +28,11 @@ export const clientSidebarItems = [
     title: "Messages",
     url: "/dashboard/client/messages",
     icon: MessageCircle,
+  },
+  {
+    title: "Notifications",
+    url: "/dashboard/client/notifications",
+    icon: Bell,
   },
   {
     title: "Profile",
