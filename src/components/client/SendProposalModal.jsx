@@ -61,8 +61,13 @@ export function SendProposalModal({ isOpen, onClose, lawyerId, lawyerName }) {
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Send Proposal to {lawyerName}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle
+            className="truncate"
+            title={`Send Proposal to ${lawyerName}`}
+          >
+            Send Proposal to {lawyerName}
+          </DialogTitle>
+          <DialogDescription className="break-words">
             Briefly describe your case. The lawyer will review it and respond.
           </DialogDescription>
         </DialogHeader>
