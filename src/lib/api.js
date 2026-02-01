@@ -26,3 +26,5 @@ export const authApi = {
         return response.data;
     },
 };
+
+export { api };
