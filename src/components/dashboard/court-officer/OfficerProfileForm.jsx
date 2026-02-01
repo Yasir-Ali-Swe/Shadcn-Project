@@ -13,6 +13,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useEffect } from "react";
 
 const schema = z.object({
@@ -43,7 +50,6 @@ export function OfficerProfileForm({
     if (defaultValues) {
       const formattedValues = { ...defaultValues };
       if (formattedValues.dob) {
-        // Ensure format is YYYY-MM-DD for date input
         formattedValues.dob = new Date(formattedValues.dob)
           .toISOString()
           .split("T")[0];
@@ -88,21 +94,43 @@ export function OfficerProfileForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Province</FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g. Punjab" {...field} />
-                </FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Province" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Punjab">Punjab</SelectItem>
+                    <SelectItem value="Sindh">Sindh</SelectItem>
+                    <SelectItem value="Khyber Pakhtunkhwa">
+                      Khyber Pakhtunkhwa
+                    </SelectItem>
+                    <SelectItem value="Balochistan">Balochistan</SelectItem>
+                    <SelectItem value="Gilgit-Baltistan">
+                      Gilgit-Baltistan
+                    </SelectItem>
+                    <SelectItem value="ICT">
+                      Islamabad Capital Territory
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
           />
         </div>
 
-        <Button type="submit" className="w-full" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting}>
           {isSubmitting
             ? "Saving..."
             : isEdit
               ? "Update Profile"
-              : "Save Profile"}
+              : "Save Personal Info"}
         </Button>
       </form>
     </Form>
