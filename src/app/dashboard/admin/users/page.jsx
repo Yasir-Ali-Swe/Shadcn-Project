@@ -92,7 +92,7 @@ function CreateUserDialog({ open, onOpenChange }) {
       <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Create Internal User</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="break-words whitespace-pre-wrap">
             Add a new Clerk or Court Officer to the system.
           </DialogDescription>
         </DialogHeader>
@@ -282,8 +282,16 @@ export default function AdminUsersPage() {
               users.map((user, i) => (
                 <TableRow key={user._id}>
                   <TableCell>{i + 1}</TableCell>
-                  <TableCell className="font-medium">{user.fullName}</TableCell>
-                  <TableCell>{user.email}</TableCell>
+                  <TableCell className="font-medium max-w-[200px]">
+                    <div className="truncate" title={user.fullName}>
+                      {user.fullName}
+                    </div>
+                  </TableCell>
+                  <TableCell className="max-w-[200px]">
+                    <div className="truncate" title={user.email}>
+                      {user.email}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge
                       variant={user.role === "clerk" ? "default" : "secondary"}
@@ -291,7 +299,11 @@ export default function AdminUsersPage() {
                       {user.role === "court_officer" ? "Officer" : "Clerk"}
                     </Badge>
                   </TableCell>
-                  <TableCell>{user.profile?.city || "N/A"}</TableCell>
+                  <TableCell className="max-w-[150px]">
+                    <div className="truncate" title={user.profile?.city}>
+                      {user.profile?.city || "N/A"}
+                    </div>
+                  </TableCell>
                   <TableCell className="text-right">
                     {/* Actions like View/Edit could go here */}
                   </TableCell>
