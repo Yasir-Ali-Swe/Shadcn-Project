@@ -94,9 +94,17 @@ export default function ClientDashboardPage() {
                     key={p._id}
                     className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
                   >
-                    <div>
-                      <p className="font-medium text-sm">{p.title}</p>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="min-w-0 flex-1 mr-2">
+                      <p
+                        className="font-medium text-sm truncate"
+                        title={p.title}
+                      >
+                        {p.title}
+                      </p>
+                      <p
+                        className="text-xs text-muted-foreground truncate"
+                        title={p.lawyerId?.fullName}
+                      >
                         To: {p.lawyerId?.fullName || "Lawyer"}
                       </p>
                     </div>
