@@ -40,7 +40,7 @@ export default function PublicLawyersPage() {
   };
 
   return (
-    <div className="min-h-screen w-full overflow-x-hidden bg-slate-50/50 dark:bg-zinc-950">
+    <div className="min-h-screen  overflow-x-hidden bg-slate-50/50 dark:bg-zinc-950">
       {/* Header / Hero Section (Simple) */}
       <div className="bg-white dark:bg-zinc-900 border-b py-12">
         <div className="container mx-auto px-4 text-center">
