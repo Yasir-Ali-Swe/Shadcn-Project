@@ -1,8 +1,10 @@
-import React from 'react'
-const layout = ({children}) => {
+import React from "react";
+const layout = ({ children }) => {
   return (
-    <main className='w-screen h-screen flex justify-center items-center'>{children}</main>
-  )
-}
+    <main className="min-h-screen w-full flex justify-center items-center p-4">
+      {children}
+    </main>
+  );
+};
 
-export default layout
+export default layout;
