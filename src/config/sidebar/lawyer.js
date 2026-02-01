@@ -4,6 +4,7 @@ import {
   Briefcase,
   UserPen,
   MessageCircle,
+  Bell,
 } from "lucide-react";
 
 export const lawyerSidebarItems = [
@@ -27,6 +28,11 @@ export const lawyerSidebarItems = [
     title: "Messages",
     url: "/dashboard/lawyer/messages",
     icon: MessageCircle,
+  },
+  {
+    title: "Notifications",
+    url: "/dashboard/lawyer/notifications",
+    icon: Bell,
   },
   {
     title: "Profile",
