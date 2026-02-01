@@ -6,7 +6,7 @@ export default function MessageBubble({ text, sender, timestamp }) {
   return (
     <div
       className={cn(
-        "flex w-full mt-2 space-x-3 max-w-xs",
+        "flex w-full mt-2 space-x-3 max-w-[85%] md:max-w-[70%]",
         isMe ? "ml-auto justify-end" : "",
       )}
     >
@@ -18,7 +18,7 @@ export default function MessageBubble({ text, sender, timestamp }) {
             : "bg-muted text-foreground rounded-bl-none",
         )}
       >
-        <p>{text}</p>
+        <p className="break-words whitespace-pre-wrap">{text}</p>
         <span className="text-[10px] opacity-70 block text-right mt-1">
           {timestamp}
         </span>
