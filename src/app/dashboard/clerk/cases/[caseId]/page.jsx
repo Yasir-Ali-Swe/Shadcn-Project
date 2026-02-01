@@ -95,8 +95,11 @@ export default function ClerkCaseDetailPage() {
       </div>
 
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
+        <div className="min-w-0 flex-1 mr-4">
+          <h2
+            className="text-3xl font-bold tracking-tight truncate"
+            title={caseData.title}
+          >
             {caseData.title}
           </h2>
           <div className="flex items-center gap-2 mt-2">
@@ -104,65 +107,80 @@ export default function ClerkCaseDetailPage() {
             <Badge>{caseData.submissionStatus}</Badge>
           </div>
         </div>
-        <Button onClick={() => setIsRegisterOpen(true)} className="gap-2">
+        <Button
+          onClick={() => setIsRegisterOpen(true)}
+          className="gap-2 shrink-0"
+        >
           <CheckCircle className="h-4 w-4" /> Register Case
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="w-full">
         <Card>
           <CardHeader>
-            <CardTitle>Case Information</CardTitle>
+            <CardTitle>Case Details</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <span className="text-sm font-medium text-muted-foreground">
-                Description
-              </span>
-              <p className="text-sm mt-1">{caseData.description}</p>
-            </div>
-            <Separator />
-            <div>
-              <span className="text-sm font-medium text-muted-foreground">
-                Filing Lawyer
-              </span>
-              <div className="text-sm font-medium mt-1">
-                {caseData.lawyerId?.fullName}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                {caseData.lawyerId?.email}
-              </div>
-            </div>
-            <div>
-              <span className="text-sm font-medium text-muted-foreground">
-                Filing Date
-              </span>
-              <p className="text-sm">
-                {caseData.filedByLawyerAt
-                  ? format(new Date(caseData.filedByLawyerAt), "PPP")
-                  : "N/A"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Parties Involved</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
+            {/* SECTION 1: CASE INFO */}
             <div className="space-y-4">
-              {caseData.parties?.map((p, idx) => (
-                <div
-                  key={idx}
-                  className="flex justify-between items-center border-b last:border-0 pb-2 last:pb-0"
-                >
-                  <span className="font-medium">{p.name}</span>
-                  <Badge variant="secondary" className="text-[10px]">
-                    {p.role}
-                  </Badge>
+              <h3 className="text-lg font-semibold tracking-tight">
+                Information
+              </h3>
+              <div>
+                <span className="text-sm font-medium text-muted-foreground">
+                  Description
+                </span>
+                <p className="text-sm mt-1 whitespace-pre-wrap break-words">
+                  {caseData.description}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Filing Lawyer
+                  </span>
+                  <div className="text-sm font-medium mt-1 break-words">
+                    {caseData.lawyerId?.fullName}
+                  </div>
+                  <div className="text-xs text-muted-foreground break-words">
+                    {caseData.lawyerId?.email}
+                  </div>
                 </div>
-              ))}
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Filing Date
+                  </span>
+                  <p className="text-sm mt-1">
+                    {caseData.filedByLawyerAt
+                      ? format(new Date(caseData.filedByLawyerAt), "PPP")
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* SECTION 2: PARTIES */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold tracking-tight">
+                Parties Involved
+              </h3>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {caseData.parties?.map((p, idx) => (
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center p-3 border rounded-md"
+                  >
+                    <span className="font-medium break-words min-w-0 pr-2">
+                      {p.name}
+                    </span>
+                    <Badge variant="secondary" className="text-[10px] shrink-0">
+                      {p.role}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -192,7 +210,12 @@ export default function ClerkCaseDetailPage() {
                 <SelectContent>
                   {officers.map((off) => (
                     <SelectItem key={off.userId?._id} value={off.userId?._id}>
-                      {off.userId?.fullName}
+                      <span
+                        className="truncate block max-w-[250px] md:max-w-full"
+                        title={off.userId?.fullName}
+                      >
+                        {off.userId?.fullName}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
