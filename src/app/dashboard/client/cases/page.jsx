@@ -24,23 +24,13 @@ import {
 import { Eye } from "lucide-react";
 
 export default function ClientCasesPage() {
-  // Use clientGetCases endpoint via api wrapper
-  // We need to ensure `casesApi.getClientCases` or similar exists.
-  // Wait, `frontend/src/lib/api/cases.js` doesn't have `getClientCases`.
-  // It has `getAll` (Lawyer) and `getClientById`.
-  // `clientGetCases` backend route is `/case/client/cases`.
-  // I need to update `casesApi` first?
-  // I'll check `casesApi` content from previous memory or view it.
-  // Step 1328 showed `getAll`.
-  // I will write this file assuming `casesApi.getClientCases` exists, then I will add it to the API file immediately.
-
   const {
     data: result,
     isLoading,
     error,
   } = useQuery({
     queryKey: ["clientCases"],
-    queryFn: () => casesApi.getClientCases(), // NOTE: NEED TO IMPLEMENT THIS
+    queryFn: casesApi.getClientCases,
     retry: false,
   });
 
@@ -81,27 +71,39 @@ export default function ClientCasesPage() {
                   <TableHead>Title</TableHead>
                   <TableHead>Lead Lawyer</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Submission Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {cases.map((c) => (
                   <TableRow key={c._id}>
-                    <TableCell className="font-medium">
-                      {c.caseNumber || (
-                        <span className="text-muted-foreground italic">
-                          Draft (Unfiled)
-                        </span>
-                      )}
+                    <TableCell className="font-medium max-w-[120px]">
+                      <div className="truncate" title={c.caseNumber}>
+                        {c.caseNumber || (
+                          <span className="text-muted-foreground italic">
+                            Draft (Unfiled)
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell>{c.title}</TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <div className="truncate" title={c.title}>
+                        {c.title}
+                      </div>
+                    </TableCell>
                     <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
+                      <div className="flex flex-col max-w-[150px]">
+                        <span
+                          className="font-medium truncate"
+                          title={c.lawyerId?.fullName}
+                        >
                           {c.lawyerId?.fullName || "Unassigned"}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span
+                          className="text-xs text-muted-foreground truncate"
+                          title={c.lawyerId?.email}
+                        >
                           {c.lawyerId?.email}
                         </span>
                       </div>
