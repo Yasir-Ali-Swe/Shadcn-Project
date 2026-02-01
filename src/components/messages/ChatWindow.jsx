@@ -73,8 +73,13 @@ export default function ChatWindow({
               <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background"></span>
             )}
           </div>
-          <div>
-            <h3 className="font-semibold text-sm">{conversation.name}</h3>
+          <div className="min-w-0">
+            <h3
+              className="font-semibold text-sm truncate"
+              title={conversation.name}
+            >
+              {conversation.name}
+            </h3>
             <p className="text-xs text-muted-foreground">
               {conversation.online ? "Online" : "Last seen recently"}
             </p>
