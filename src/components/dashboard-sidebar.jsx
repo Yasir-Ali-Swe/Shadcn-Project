@@ -4,6 +4,8 @@ import { clearUser } from "@/store/slices/auth-slice";
 import { authApi } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { notificationsApi } from "@/lib/api/notifications";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +28,15 @@ const DashboardSidebar = () => {
   const router = useRouter();
   const { role, user } = useSelector((state) => state.auth);
 
+  // Notifications Check
+  const { data: unreadStats } = useQuery({
+    queryKey: ["unreadCount"],
+    queryFn: notificationsApi.getUnreadCount,
+    enabled: !!user && (role === "client" || role === "lawyer"),
+    retry: false,
+  });
+  const unreadCount = unreadStats?.count || 0;
+
   // Guard against null role during initial load, though AuthGuard should handle this locally if wrapped.
   const currentRole = role || "";
   const links = getSidebarItemsByRole(currentRole);
@@ -47,8 +58,11 @@ const DashboardSidebar = () => {
     <Sidebar className="bg-sidebar text-sidebar-foreground">
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem className="mt-2">
-            <SidebarMenuButton asChild className="text-lg">
+          <SidebarMenuItem className="mt-2 hover:bg-transparent hover:text-background">
+            <SidebarMenuButton
+              asChild
+              className="text-l`g hover:bg-transparent hover:text-background"
+            >
               <Link href="/home" className="font-bold text-xl">
                 LawConnect
               </Link>
@@ -70,6 +84,9 @@ const DashboardSidebar = () => {
                   ? pathname === item.url
                   : pathname.startsWith(item.url);
 
+                const isNotifications = item.title === "Notifications";
+                const showRedDot = isNotifications && unreadCount > 0;
+
                 return (
                   <SidebarMenuItem
                     key={item.title}
@@ -83,9 +100,17 @@ const DashboardSidebar = () => {
                       asChild
                       className="rounded-full text-lg [&>svg]:size-5"
                     >
-                      <Link href={item.url} className="flex items-center gap-2">
-                        {item.icon && <item.icon />}
-                        <span>{item.title}</span>
+                      <Link
+                        href={item.url}
+                        className="flex items-center gap-2 justify-between w-full"
+                      >
+                        <div className="flex items-center gap-2">
+                          {item.icon && <item.icon />}
+                          <span>{item.title}</span>
+                        </div>
+                        {showRedDot && (
+                          <span className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse mr-2" />
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
