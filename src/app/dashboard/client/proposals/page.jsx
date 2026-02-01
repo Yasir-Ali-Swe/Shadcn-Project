@@ -112,14 +112,19 @@ export default function ClientProposalsPage() {
       >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>{selectedProposal?.title}</DialogTitle>
-            <DialogDescription>
+            <DialogTitle
+              className="truncate block max-w-[400px] "
+              title={selectedProposal?.title}
+            >
+              {selectedProposal?.title}
+            </DialogTitle>
+            <DialogDescription className="text-left break-words">
               Sent to {selectedProposal?.lawyerId?.fullName} on{" "}
               {selectedProposal &&
                 format(new Date(selectedProposal.createdAt), "PPP")}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto px-1">
             <div className="space-y-2">
               <h4 className="text-sm font-medium leading-none">Status</h4>
               <Badge
@@ -136,7 +141,7 @@ export default function ClientProposalsPage() {
             </div>
             <div className="space-y-2">
               <h4 className="text-sm font-medium leading-none">Description</h4>
-              <p className="text-sm text-slate-500 whitespace-pre-wrap">
+              <p className="text-sm text-slate-500 whitespace-pre-wrap break-words">
                 {selectedProposal?.description}
               </p>
             </div>
@@ -145,7 +150,7 @@ export default function ClientProposalsPage() {
                 <h4 className="text-sm font-medium leading-none">
                   Lawyer/Firm Contact
                 </h4>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 break-words">
                   {selectedProposal.lawyerId.email}
                 </p>
               </div>
