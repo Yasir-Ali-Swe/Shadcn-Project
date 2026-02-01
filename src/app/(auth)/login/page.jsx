@@ -32,7 +32,7 @@ const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),
   password: z
     .string()
-    .min(4, { message: "Password must be at least 6 characters" }),
+    .min(6, { message: "Password must be at least 6 characters" }),
 });
 const page = () => {
   const router = useRouter();
