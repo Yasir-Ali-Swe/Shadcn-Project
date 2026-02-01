@@ -31,11 +31,13 @@ import {
 import { ArrowLeft, Gavel, CalendarPlus, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
+import { CaseOverviewTab } from "@/components/dashboard/cases/CaseOverviewTab";
+import { CaseStatusTab } from "@/components/dashboard/cases/CaseStatusTab";
+import { CaseHearingsTab } from "@/components/dashboard/cases/CaseHearingsTab";
 
 export default function OfficerCaseDetailPage() {
   const { caseId } = useParams();
   const queryClient = useQueryClient();
-  const [isHearingOpen, setIsHearingOpen] = useState(false);
 
   // -- Data Fetching --
   const { data: caseResult, isLoading: caseLoading } = useQuery({
@@ -53,27 +55,6 @@ export default function OfficerCaseDetailPage() {
   const hearings = hearingsResult?.data || [];
 
   // -- Mutations --
-  const scheduleMutation = useMutation({
-    mutationFn: (data) => courtOfficerApi.scheduleHearing(caseId, data),
-    onSuccess: () => {
-      toast.success("Hearing scheduled.");
-      setIsHearingOpen(false);
-      queryClient.invalidateQueries(["hearings", caseId]);
-    },
-    onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to schedule"),
-  });
-
-  const updateHearingMutation = useMutation({
-    mutationFn: ({ id, status }) =>
-      courtOfficerApi.updateHearingStatus(id, { status }),
-    onSuccess: () => {
-      toast.success("Hearing status updated");
-      queryClient.invalidateQueries(["hearings", caseId]);
-    },
-    onError: (err) =>
-      toast.error(err.response?.data?.message || "Failed to update"),
-  });
 
   const judgmentMutation = useMutation({
     mutationFn: (data) => courtOfficerApi.makeJudgment(caseId, data),
@@ -115,8 +96,11 @@ export default function OfficerCaseDetailPage() {
       </div>
 
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
+        <div className="min-w-0 flex-1 mr-4">
+          <h2
+            className="text-3xl font-bold tracking-tight truncate"
+            title={caseData.title}
+          >
             {caseData.title}
           </h2>
           <div className="flex items-center gap-2 mt-2">
@@ -133,160 +117,31 @@ export default function OfficerCaseDetailPage() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+        <TabsList className="grid w-full grid-cols-4 lg:w-[400px]">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="status">Status</TabsTrigger>
           <TabsTrigger value="hearings">Hearings</TabsTrigger>
           <TabsTrigger value="judgment">Judgment</TabsTrigger>
         </TabsList>
 
         {/* OVERVIEW TAB */}
         <TabsContent value="overview" className="mt-4 space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Case Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Description
-                  </span>
-                  <p className="mt-1">{caseData.description}</p>
-                </div>
-                <Separator />
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Lawyer
-                  </span>
-                  <p>
-                    {caseData.lawyerId?.fullName} ({caseData.lawyerId?.email})
-                  </p>
-                </div>
-                <div>
-                  <span className="text-sm font-medium text-muted-foreground">
-                    Court
-                  </span>
-                  <p>{caseData.courtId?.name}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <CardTitle>Parties</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {caseData.parties?.map((p, i) => (
-                  <div
-                    key={i}
-                    className="flex justify-between border-b pb-2 last:border-0 last:pb-0"
-                  >
-                    <span>{p.name}</span>
-                    <Badge variant="outline" className="text-[10px]">
-                      {p.role}
-                    </Badge>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          </div>
+          <CaseOverviewTab caseData={caseData} role="court_officer" />
+        </TabsContent>
+
+        {/* STATUS TAB */}
+        <TabsContent value="status" className="mt-6">
+          <CaseStatusTab caseData={caseData} />
         </TabsContent>
 
         {/* HEARINGS TAB */}
         <TabsContent value="hearings" className="mt-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold">Proceedings History</h3>
-            <Button
-              onClick={() => setIsHearingOpen(true)}
-              disabled={isReadOnly}
-              size="sm"
-            >
-              <CalendarPlus className="mr-2 h-4 w-4" /> Schedule Hearing
-            </Button>
-          </div>
-          <div className="space-y-4">
-            {hearings.map((h) => (
-              <Card key={h._id}>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <div className="font-semibold">
-                      {format(new Date(h.date), "PPP p")}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{h.remarks}</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <Badge
-                      variant={
-                        h.status === "completed" ? "secondary" : "default"
-                      }
-                    >
-                      {h.status}
-                    </Badge>
-                    {!isReadOnly && h.status === "scheduled" && (
-                      <Select
-                        onValueChange={(val) =>
-                          updateHearingMutation.mutate({
-                            id: h._id,
-                            status: val,
-                          })
-                        }
-                      >
-                        <SelectTrigger className="w-[130px] h-8">
-                          <SelectValue placeholder="Update" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="adjourned">Adjourn</SelectItem>
-                          <SelectItem value="completed">Complete</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {hearings.length === 0 && (
-              <p className="text-muted-foreground">
-                No hearings scheduled yet.
-              </p>
-            )}
-          </div>
-
-          <Dialog open={isHearingOpen} onOpenChange={setIsHearingOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Schedule New Hearing</DialogTitle>
-              </DialogHeader>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const fd = new FormData(e.target);
-                  scheduleMutation.mutate({
-                    date: fd.get("date"),
-                    remarks: fd.get("remarks"),
-                    status: "scheduled",
-                  });
-                }}
-                className="space-y-4"
-              >
-                <div>
-                  <Label>Date & Time</Label>
-                  <Input name="date" type="datetime-local" required />
-                </div>
-                <div>
-                  <Label>Remarks / Agenda</Label>
-                  <Textarea
-                    name="remarks"
-                    required
-                    placeholder="e.g. First hearing for evidence"
-                  />
-                </div>
-                <DialogFooter>
-                  <Button type="submit" disabled={scheduleMutation.isPending}>
-                    Schedule
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+          <CaseHearingsTab
+            hearings={hearings}
+            role="court_officer"
+            caseId={caseId}
+            isReadOnly={isReadOnly}
+          />
         </TabsContent>
 
         {/* JUDGMENT TAB */}
@@ -305,21 +160,6 @@ export default function OfficerCaseDetailPage() {
                         ? "Case Decided"
                         : caseData.status}
                     </p>
-                    {/* Ideally we fetch judgment details here if not in caseData. 
-                                            We need a separate query for judgment or populate it in getCaseById?
-                                            Backend getActiveCaseById doesn't populate judgement.
-                                            Since I can't edit backend easily on the fly without check, 
-                                            I'll assume I should show what text I have or "View Orders".
-                                            Actually, I can't see the judgment text unless I fetch it.
-                                            But wait, judgments are usually separate documents.
-                                            I will trust the dashboard Flow for now.
-                                            Wait, makeJudgment sends data. Where is it stored? In Judgment Model.
-                                            I need to fetch Judgment to display it.
-                                            Use `courtOfficerApi.makeJudgment` usually returns it.
-                                            BUT `getCaseById` doesn't return it.
-                                            I'll assume for this turn I might need to implement `getJudgment`
-                                            or just show "Decided".
-                                         */}
                     <p className="text-sm text-green-600 font-bold flex items-center gap-2 mt-2">
                       <CheckCircle className="h-4 w-4" /> Judgment Delivered
                     </p>
