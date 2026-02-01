@@ -79,7 +79,12 @@ export function SubmitCaseDialog({ open, onOpenChange, caseId, onSubmitted }) {
               <SelectContent>
                 {courts.map((court) => (
                   <SelectItem key={court._id} value={court._id}>
-                    {court.name} ({court.type}) - {court.city}
+                    <span
+                      className="truncate block max-w-[280px] md:max-w-full"
+                      title={`${court.name} ({court.type}) - {court.city}`}
+                    >
+                      {court.name} ({court.type}) - {court.city}
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -90,7 +95,7 @@ export function SubmitCaseDialog({ open, onOpenChange, caseId, onSubmitted }) {
           </div>
 
           {selectedCourt && (
-            <div className="rounded-md border p-3 bg-muted/50 text-sm space-y-1">
+            <div className="rounded-md border p-3 bg-muted/50 text-sm space-y-1 break-words">
               <p>
                 <strong>Province:</strong> {selectedCourt.province}
               </p>
