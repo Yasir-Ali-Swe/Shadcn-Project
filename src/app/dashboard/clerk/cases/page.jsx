@@ -78,14 +78,14 @@ export default function SubmittedCasesPage() {
             <tbody className="[&_tr:last-child]:border-0">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="p-4 text-center">
+                  <td colSpan={8} className="p-4 text-center">
                     Loading cases...
                   </td>
                 </tr>
               ) : cases.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="p-8 text-center text-muted-foreground"
                   >
                     No cases found.
@@ -97,9 +97,12 @@ export default function SubmittedCasesPage() {
                     key={item._id}
                     className="border-b transition-colors hover:bg-muted/50"
                   >
-                    <td className="p-4 align-middle font-medium truncate max-w-[200px]">
+                    <td
+                      className="p-4 align-middle font-medium truncate max-w-[200px]"
+                      title={item.title}
+                    >
                       {item.title}
-                      <div className="text-xs text-muted-foreground font-normal">
+                      <div className="text-xs text-muted-foreground font-normal truncate">
                         {item.caseNumber || "No Case No."}
                       </div>
                     </td>
@@ -133,11 +136,18 @@ export default function SubmittedCasesPage() {
                         {item.status}
                       </Badge>
                     </td>
-                    <td className="p-4 align-middle">
-                      {item.lawyerId?.fullName || "Unknown"}
+                    <td className="p-4 align-middle max-w-[150px]">
+                      <div className="truncate" title={item.lawyerId?.fullName}>
+                        {item.lawyerId?.fullName || "Unknown"}
+                      </div>
                     </td>
-                    <td className="p-4 align-middle">
-                      {item.courtOfficerId?.fullName || "-"}
+                    <td className="p-4 align-middle max-w-[150px]">
+                      <div
+                        className="truncate"
+                        title={item.courtOfficerId?.fullName}
+                      >
+                        {item.courtOfficerId?.fullName || "-"}
+                      </div>
                     </td>
                     <td className="p-4 align-middle">
                       {item.filedByLawyerAt
