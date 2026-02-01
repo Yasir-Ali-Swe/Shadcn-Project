@@ -12,9 +12,11 @@ export default function DashboardLayout({ children }) {
       <AuthGuard>
         <SocketProvider>
           <DashboardSidebar />
-          <div className="flex flex-col w-screen">
+          <div className="flex flex-col min-w-0 w-full">
             <DasboardNavbar />
-            <main className="flex-1 m-3">{children}</main>
+            <main className="flex-1 p-2 md:p-4 overflow-x-hidden">
+              {children}
+            </main>
           </div>
         </SocketProvider>
       </AuthGuard>
