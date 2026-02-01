@@ -90,7 +90,7 @@ function CreateCourtDialog({ open, onOpenChange }) {
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add New Court</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="break-words whitespace-pre-wrap">
             Register a new court entity in the system.
           </DialogDescription>
         </DialogHeader>
@@ -268,12 +268,21 @@ export default function AdminCourtsPage() {
                   }
                 >
                   <TableCell>{i + 1}</TableCell>
-                  <TableCell className="font-medium">{court.name}</TableCell>
+                  <TableCell className="font-medium max-w-[200px]">
+                    <div className="truncate" title={court.name}>
+                      {court.name}
+                    </div>
+                  </TableCell>
                   <TableCell>
                     <Badge variant="outline">{court.type}</Badge>
                   </TableCell>
-                  <TableCell>
-                    {court.city}, {court.province}
+                  <TableCell className="max-w-[150px]">
+                    <div
+                      className="truncate"
+                      title={`${court.city}, ${court.province}`}
+                    >
+                      {court.city}, {court.province}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {court.clerkId ? (
