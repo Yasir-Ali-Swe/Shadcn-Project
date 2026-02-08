@@ -173,9 +173,22 @@ function CreateUserDialog({ open, onOpenChange }) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Province</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select Province" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Punjab">Punjab</SelectItem>
+                        <SelectItem value="Sindh">Sindh</SelectItem>
+                        <SelectItem value="KPK">KPK</SelectItem>
+                        <SelectItem value="Balochistan">Balochistan</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
