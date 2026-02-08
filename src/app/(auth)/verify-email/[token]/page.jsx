@@ -39,7 +39,7 @@ const VerifyEmailPage = () => {
   }, [token]);
 
   return (
-    <Card className="w-full max-w-sm">
+    <Card className="w-full max-w-sm p-4">
       <CardHeader>
         <CardTitle>Email Verification</CardTitle>
         <CardDescription>Verifying your email address...</CardDescription>
