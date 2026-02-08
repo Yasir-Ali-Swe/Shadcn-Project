@@ -1,5 +1,4 @@
-"use client";
-
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,7 +20,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 // Provinces enum from backend
 const PROVINCES = ["Punjab", "Sindh", "KPK", "Balochistan"];
@@ -32,16 +33,13 @@ const profileSchema = z.object({
   province: z.enum(PROVINCES, {
     errorMap: () => ({ message: "Please select a valid province" }),
   }),
-  // Country removed as it wasn't in list of required fields for "Profile Completion" in prompt,
-  // but let's keep it if backend expects it or just hide it?
-  // Backend model UserInfo has country in createClientProfile destructuring but schema doesn't show it explicitly in the snippet I saw?
-  // Wait, backend/controllers/client-controller.js line 8: const { ..., country, ... } = req.body;
-  // But backend/models/user-info-model.js lines 1-35 DO NOT have 'country'.
-  // So 'country' is likely ignored by Mongoose if not in schema. I will remove it from UI to be safe/clean.
-  profileImageUrl: z.string().url("Invalid URL").optional().or(z.literal("")),
+  profileImageUrl: z.string().optional().or(z.literal("")),
 });
 
 export function ClientProfileForm({ defaultValues, onSubmit, isSubmitting }) {
+  const [preview, setPreview] = useState(defaultValues?.profileImageUrl || "");
+  const fileInputRef = useRef(null);
+
   const form = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: defaultValues || {
@@ -52,9 +50,93 @@ export function ClientProfileForm({ defaultValues, onSubmit, isSubmitting }) {
     },
   });
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validation
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be less than 2MB");
+      return;
+    }
+
+    // Create Preview
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    toast.success("Image selected for preview");
+  };
+
+  const handleRemoveImage = () => {
+    setPreview("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Profile Image Upload Section */}
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+          <Avatar className="h-24 w-24 border-2 border-muted">
+            <AvatarImage src={preview} className="object-cover" />
+            <AvatarFallback className="text-xl font-bold">CL</AvatarFallback>
+          </Avatar>
+
+          <div className="space-y-2 flex-1">
+            <FormLabel>Profile Photos</FormLabel>
+            <div className="flex gap-2 items-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Image
+              </Button>
+              {preview && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={handleRemoveImage}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Remove
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Accepted formats: JPG, PNG. Max size: 2MB.
+            </p>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileSelect}
+            />
+          </div>
+        </div>
+
+        {/* Hidden field to keep form logic intact */}
+        <FormField
+          control={form.control}
+          name="profileImageUrl"
+          render={({ field }) => (
+            <FormItem className="hidden">
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="dob"
@@ -113,26 +195,6 @@ export function ClientProfileForm({ defaultValues, onSubmit, isSubmitting }) {
             )}
           />
         </div>
-
-        <FormField
-          control={form.control}
-          name="profileImageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Profile Image URL</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="https://example.com/avatar.jpg"
-                  {...field}
-                />
-              </FormControl>
-              <FormDescription>
-                Provide a direct link to your profile image.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
