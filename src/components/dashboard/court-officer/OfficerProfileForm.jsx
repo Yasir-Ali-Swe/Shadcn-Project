@@ -1,5 +1,4 @@
-"use client";
-
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -21,12 +20,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useEffect } from "react";
+import { Loader2, Upload, X } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 
 const schema = z.object({
   dob: z.string().min(1, "Date of birth is required"),
   city: z.string().min(1, "City is required"),
   province: z.string().min(1, "Province is required"),
-  profileImageUrl: z.string().optional(),
+  profileImageUrl: z.string().optional().or(z.literal("")),
 });
 
 export function OfficerProfileForm({
@@ -35,6 +37,9 @@ export function OfficerProfileForm({
   isSubmitting,
   isEdit = false,
 }) {
+  const [preview, setPreview] = useState(defaultValues?.profileImageUrl || "");
+  const fileInputRef = useRef(null);
+
   const form = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -55,12 +60,97 @@ export function OfficerProfileForm({
           .split("T")[0];
       }
       form.reset(formattedValues);
+      setPreview(defaultValues.profileImageUrl || "");
     }
   }, [defaultValues, form]);
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validation
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be less than 2MB");
+      return;
+    }
+
+    // Create Preview
+    const objectUrl = URL.createObjectURL(file);
+    setPreview(objectUrl);
+    toast.success("Image selected for preview");
+  };
+
+  const handleRemoveImage = () => {
+    setPreview("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        {/* Profile Image Upload Section */}
+        <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+          <Avatar className="h-24 w-24 border-2 border-muted">
+            <AvatarImage src={preview} className="object-cover" />
+            <AvatarFallback className="text-xl font-bold">OF</AvatarFallback>
+          </Avatar>
+
+          <div className="space-y-2 flex-1">
+            <FormLabel>Profile Photos</FormLabel>
+            <div className="flex gap-2 items-center">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Image
+              </Button>
+              {preview && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={handleRemoveImage}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Remove
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Accepted formats: JPG, PNG. Max size: 2MB.
+            </p>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleFileSelect}
+            />
+          </div>
+        </div>
+
+        {/* Hidden field to keep form logic intact */}
+        <FormField
+          control={form.control}
+          name="profileImageUrl"
+          render={({ field }) => (
+            <FormItem className="hidden">
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="dob"
@@ -107,16 +197,8 @@ export function OfficerProfileForm({
                   <SelectContent>
                     <SelectItem value="Punjab">Punjab</SelectItem>
                     <SelectItem value="Sindh">Sindh</SelectItem>
-                    <SelectItem value="Khyber Pakhtunkhwa">
-                      Khyber Pakhtunkhwa
-                    </SelectItem>
+                    <SelectItem value="KPK">KPK</SelectItem>
                     <SelectItem value="Balochistan">Balochistan</SelectItem>
-                    <SelectItem value="Gilgit-Baltistan">
-                      Gilgit-Baltistan
-                    </SelectItem>
-                    <SelectItem value="ICT">
-                      Islamabad Capital Territory
-                    </SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
